@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>割り勘アプリ - グループ</title>
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- Firebase設定 -->
+  <script src="js/firebase.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1 id="groupName">読み込み中...</h1>
+    <p id="membersList"></p>
+
+    <h2>立て替えを追加</h2>
+    <div class="form-group">
+      <label for="title">項目名</label>
+      <input type="text" id="title" placeholder="例：1日目の夕食" />
+    </div>
+
+    <div class="form-group">
+      <label for="amount">金額（円）</label>
+      <input type="number" id="amount" />
+    </div>
+
+    <div class="form-group">
+      <label for="paidBy">支払った人</label>
+      <select id="paidBy"></select>
+    </div>
+
+    <div class="form-group">
+      <label>対象メンバー</label>
+      <div id="targetMembers"></div>
+      <button id="selectAllBtn" type="button">全員選択</button>
+    </div>
+
+    <button id="addExpenseBtn">立て替えを登録</button>
+    <p id="expenseError" class="error"></p>
+
+    <h2>立て替え一覧</h2>
+    <table id="expensesTable">
+      <thead>
+        <tr>
+          <th>項目</th>
+          <th>金額</th>
+          <th>支払った人</th>
+          <th>対象</th>
+        </tr>
+      </thead>
+      <tbody id="expensesBody">
+      </tbody>
+    </table>
+
+    <h2>清算結果</h2>
+    <ul id="settlementList"></ul>
+  </div>
+
+  <script src="js/group.js"></script>
+</body>
+</html>

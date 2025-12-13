@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>割り勘アプリ - グループ作成</title>
+  <link rel="stylesheet" href="css/style.css" />
+
+  <!-- Firebase SDK (compat版) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- Firebase設定 -->
+  <script src="js/firebase.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>割り勘グループを作成</h1>
+
+    <div class="form-group">
+      <label for="eventName">イベント名</label>
+      <input type="text" id="eventName" placeholder="例：沖縄旅行、忘年会" />
+    </div>
+
+    <div class="form-group">
+      <label for="members">メンバー（1行に1人ずつ）</label>
+      <textarea id="members" rows="5" placeholder="例：&#10;たろう&#10;はなこ&#10;しみず"></textarea>
+    </div>
+
+    <button id="createGroupBtn">グループを作成</button>
+
+    <p id="errorMessage" class="error"></p>
+  </div>
+
+  <script src="js/index.js"></script>
+</body>
+</html>
