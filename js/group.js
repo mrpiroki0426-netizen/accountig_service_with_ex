@@ -18,7 +18,7 @@ function calculateSettlement(members, expenses) {
   });
 
   expenses.forEach(exp => {
-    const { title, amount, paidBy, targets } = exp;
+    const { amount, paidBy, targets } = exp;
     const share = amount / targets.length;
 
     // 実際に払った人
@@ -44,7 +44,6 @@ function calculateSettlement(members, expenses) {
 
   // 4. 貪欲にマッチング
   while (plus.length > 0 && minus.length > 0) {
-    // 残高が一番大きい人/小さい人を探す
     plus.sort((a, b) => b.balance - a.balance);
     minus.sort((a, b) => a.balance - b.balance);
 
@@ -65,7 +64,6 @@ function calculateSettlement(members, expenses) {
     p.balance -= amount;
     m.balance += amount;
 
-    // 残高が0付近になったら配列から除外
     if (p.balance <= 1) plus.shift();
     if (m.balance >= -1) minus.shift();
   }
@@ -109,13 +107,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     groupNameEl.textContent = data.name || "無題のイベント";
     membersListEl.textContent = `メンバー: ${members.join("、")}`;
 
-    // 支払った人のセレクトボックス & 対象メンバーのチェックボックスを作成
+    // ★ 支払った人セレクト & 対象メンバーのチェックボックス生成
     members.forEach(m => {
+      // 支払った人セレクト
       const option = document.createElement("option");
       option.value = m;
       option.textContent = m;
       paidBySelect.appendChild(option);
 
+      // 対象メンバーのチェックボックス
       const label = document.createElement("label");
       label.style.display = "inline-block";
       label.style.marginRight = "8px";

@@ -74,3 +74,37 @@ th, td {
 th {
   background: #f3f4f6;
 }
+
+.inline {
+  display: flex;
+  gap: 8px;
+}
+
+.inline input[type="text"] {
+  flex: 1;
+}
+
+button.secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+button.secondary:hover {
+  background: #d1d5db;
+}
+
+.member-list {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 8px;
+}
+
+.member-list li {
+  display: inline-block;
+  margin: 4px 4px 0 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eef2ff;
+  font-size: 0.9rem;
+}
+
