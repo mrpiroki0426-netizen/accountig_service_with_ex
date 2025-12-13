@@ -8,7 +8,6 @@ function getGroupIdFromQuery() {
 
 // 割り勘計算ロジック
 function calculateSettlement(members, expenses) {
-  // 1. 各メンバーの「実際に払った金額」と「本来払うべき金額」を計算
   const paid = {};
   const shouldPay = {};
 
@@ -21,28 +20,21 @@ function calculateSettlement(members, expenses) {
     const { amount, paidBy, targets } = exp;
     const share = amount / targets.length;
 
-    // 実際に払った人
     paid[paidBy] += amount;
-
-    // 対象メンバーの本来の負担
     targets.forEach(t => {
       shouldPay[t] += share;
     });
   });
 
-  // 2. 残高 = 実際に払った - 本来払うべき
   const balances = members.map(m => ({
     name: m,
     balance: paid[m] - shouldPay[m]
   }));
 
-  // 3. プラスとマイナスに分ける
-  let plus = balances.filter(b => b.balance > 1);   // 1円以下誤差は無視
+  let plus = balances.filter(b => b.balance > 1);
   let minus = balances.filter(b => b.balance < -1);
-
   const result = [];
 
-  // 4. 貪欲にマッチング
   while (plus.length > 0 && minus.length > 0) {
     plus.sort((a, b) => b.balance - a.balance);
     minus.sort((a, b) => a.balance - b.balance);
@@ -51,14 +43,10 @@ function calculateSettlement(members, expenses) {
     const m = minus[0];
 
     const amount = Math.min(p.balance, -m.balance);
-    const rounded = Math.round(amount); // 円に丸める
+    const rounded = Math.round(amount);
 
     if (rounded > 0) {
-      result.push({
-        from: m.name,
-        to: p.name,
-        amount: rounded
-      });
+      result.push({ from: m.name, to: p.name, amount: rounded });
     }
 
     p.balance -= amount;
@@ -73,8 +61,10 @@ function calculateSettlement(members, expenses) {
 
 document.addEventListener("DOMContentLoaded", async () => {
   const groupId = getGroupIdFromQuery();
+  console.log("[group.js] groupId =", groupId);
+
   if (!groupId) {
-    alert("グループIDが指定されていません。");
+    alert("グループIDが指定されていません。（URL に ?gid= が付いているか確認してください）");
     return;
   }
 
@@ -91,31 +81,49 @@ document.addEventListener("DOMContentLoaded", async () => {
   const amountInput = document.getElementById("amount");
   const addExpenseBtn = document.getElementById("addExpenseBtn");
 
+  // ★ 共有URL関連
+  const shareUrlInput = document.getElementById("shareUrl");
+  const copyShareUrlBtn = document.getElementById("copyShareUrlBtn");
+  const shareUrlMessage = document.getElementById("shareUrlMessage");
+
+  // 今開いているURLそのものを共有URLとして使う
+  const shareUrl = window.location.href;
+  if (shareUrlInput) {
+    shareUrlInput.value = shareUrl;
+  }
+
+  // ★ navigator.share が使える環境ではボタンのラベルを変更（任意）
+  if (navigator.share) {
+    copyShareUrlBtn.textContent = "共有する";
+  }
+
   let members = [];
   let expenses = [];
 
   // グループ情報の取得
   try {
     const doc = await db.collection("groups").doc(groupId).get();
+    console.log("[group.js] group doc exists =", doc.exists);
+
     if (!doc.exists) {
       groupNameEl.textContent = "グループが見つかりませんでした。";
       return;
     }
 
     const data = doc.data();
+    console.log("[group.js] group data =", data);
+
     members = data.members || [];
     groupNameEl.textContent = data.name || "無題のイベント";
     membersListEl.textContent = `メンバー: ${members.join("、")}`;
 
-    // ★ 支払った人セレクト & 対象メンバーのチェックボックス生成
+    // 支払った人セレクト & 対象メンバーのチェックボックス
     members.forEach(m => {
-      // 支払った人セレクト
       const option = document.createElement("option");
       option.value = m;
       option.textContent = m;
       paidBySelect.appendChild(option);
 
-      // 対象メンバーのチェックボックス
       const label = document.createElement("label");
       label.style.display = "inline-block";
       label.style.marginRight = "8px";
@@ -130,7 +138,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       targetMembersDiv.appendChild(label);
     });
   } catch (err) {
-    console.error(err);
+    console.error("[group.js] グループ情報取得エラー", err);
     groupNameEl.textContent = "グループ情報の取得に失敗しました。";
     return;
   }
@@ -175,7 +183,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         expensesBody.appendChild(tr);
       });
 
-      // 精算結果を再計算
       settlementList.innerHTML = "";
       if (expenses.length === 0) {
         const li = document.createElement("li");
@@ -203,6 +210,45 @@ document.addEventListener("DOMContentLoaded", async () => {
     checkboxes.forEach(cb => {
       cb.checked = true;
     });
+  });
+
+  // ★ 共有URLコピー or 共有シート
+  copyShareUrlBtn.addEventListener("click", async () => {
+    shareUrlMessage.textContent = "";
+
+    const url = shareUrlInput.value;
+    const shareData = {
+      title: groupNameEl.textContent || "割り勘グループ",
+      text: "この割り勘グループを共有します。",
+      url
+    };
+
+    // ① Web Share API が使える（主にスマホ）の場合
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+        shareUrlMessage.textContent = "共有シートを開きました。";
+        return; // ここで終了（コピーには行かない）
+      } catch (err) {
+        // ユーザーがキャンセルした場合もここに来るので、コピーにフォールバック
+        console.warn("navigator.share でキャンセルまたはエラー", err);
+      }
+    }
+
+    // ② フォールバック：URLコピー
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+      } else {
+        shareUrlInput.select();
+        document.execCommand("copy");
+      }
+      shareUrlMessage.textContent = "共有URLをコピーしました。";
+    } catch (err) {
+      console.error("URLコピー失敗", err);
+      shareUrlMessage.textContent =
+        "コピーに失敗しました。手動で選択してコピーしてください。";
+    }
   });
 
   // 立て替え追加
@@ -248,11 +294,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-      // 入力フォームをリセット（一部だけ）
       titleInput.value = "";
       amountInput.value = "";
     } catch (err) {
-      console.error(err);
+      console.error("[group.js] 立て替え追加エラー", err);
       expenseError.textContent = "立て替えの登録に失敗しました。";
     }
   });

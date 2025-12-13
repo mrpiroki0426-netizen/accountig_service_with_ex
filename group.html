@@ -42,6 +42,21 @@
     <button id="addExpenseBtn">立て替えを登録</button>
     <p id="expenseError" class="error"></p>
 
+    <!-- ★ 共有URL表示エリア -->
+    <h2>グループの共有URL</h2>
+    <div class="form-group">
+      <input
+        type="text"
+        id="shareUrl"
+        readonly
+        style="width: 100%;"
+      />
+      <button id="copyShareUrlBtn" type="button" style="margin-top: 8px;">
+        URLをコピー
+      </button>
+      <p id="shareUrlMessage" class="helper"></p>
+    </div>
+
     <h2>立て替え一覧</h2>
     <table id="expensesTable">
       <thead>
@@ -59,7 +74,7 @@
     <ul id="settlementList"></ul>
   </div>
 
-  <!-- ★ JS はここで 1 回だけ読み込む -->
+  <!-- JS はここで 1 回だけ読み込む -->
   <script src="js/group.js"></script>
 </body>
 </html>
