@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>割り勘アプリ - グループ作成</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="./css/style.css" />
 
   <!-- Firebase SDK (compat版) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -22,9 +22,19 @@
     </div>
 
     <div class="form-group">
-      <label for="members">メンバー（1行に1人ずつ）</label>
-      <textarea id="members" rows="5" placeholder="例：&#10;たろう&#10;はなこ&#10;しみず"></textarea>
+      <label for="memberName">メンバーを追加</label>
+
+      <div class="inline">
+        <input type="text" id="memberName" placeholder="例：しみしゅん" />
+        <button type="button" id="addMemberBtn" class="secondary">
+          追加
+        </button>
+      </div>
+
+      <p class="helper">追加済みメンバー：</p>
+      <ul id="memberList" class="member-list"></ul>
     </div>
+
 
     <button id="createGroupBtn">グループを作成</button>
 
