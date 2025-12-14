@@ -135,3 +135,95 @@ button.secondary:hover {
   border-color: #4a90e2;
   font-weight: bold;
 }
+
+/* ===== スマホ最適化（幅600px以下） ===== */
+@media (max-width: 600px) {
+  body {
+    background: #f5f7fb;
+  }
+
+  /* カードを「画面いっぱい」に近づける */
+  .container {
+    max-width: 100%;
+    margin: 0;
+    padding: 16px 12px;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  h1 {
+    font-size: 20px;
+    margin: 8px 0 12px;
+  }
+
+  h2 {
+    font-size: 16px;
+    margin-top: 16px;
+  }
+
+  /* フォームまわりの文字を少し小さめ＆詰め気味に */
+  .form-group label {
+    font-size: 14px;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* iOS の拡大を防ぐライン */
+    padding: 8px;
+  }
+
+  /* ボタンは基本フル幅にしてタップしやすく */
+  button {
+    width: 100%;
+    padding: 10px 0;
+    font-size: 16px;
+  }
+
+  /* タブを上部に固定して“アプリ感”を出す */
+  .tabs {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    padding: 8px 8px 0;
+    background: #f5f7fb;
+  }
+
+  .tab {
+    padding: 8px 0;
+    font-size: 13px;
+  }
+
+  /* テーブルは横スクロールで無理に詰まない */
+  table {
+    font-size: 13px;
+  }
+
+  #expensesTable,
+  #scoresTable {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  #expensesTable thead,
+  #scoresTable thead {
+    white-space: nowrap;
+  }
+
+  /* メンバー一覧など、縦長になりがちなリスト用 */
+  .member-list {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .tabs {
+    gap: 4px;
+  }
+
+  .tab {
+    border-radius: 999px; /* pill型にすると一気にネイティブアプリ感 */
+  }
+}
