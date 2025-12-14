@@ -200,7 +200,11 @@ th {
   font-size: 16px;
   font-weight: bold;
   color: #000;
+
+  white-space: nowrap;     /* ← 改行させない */
+  word-break: keep-all;   /* ← 日本語の強制改行を防ぐ */
 }
+
 
 .side-menu-close {
   border: none;
