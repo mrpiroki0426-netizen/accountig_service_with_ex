@@ -286,11 +286,12 @@ th {
   }
 
   /* ハンバーガー以外のボタンだけフル幅にする */
-  button:not(.menu-button) {
+  button:not(.menu-button):not(.score-btn) {
     width: 100%;
     padding: 10px 0;
     font-size: 16px;
   }
+
 
   table {
     font-size: 13px;
@@ -360,3 +361,21 @@ th {
   font-size: 13px;
 }
 
+/* スコア入力（±ボタンつき） */
+.score-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.score-input {
+  width: 64px;
+  text-align: right;
+}
+
+.score-btn {
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 16px;
+  line-height: 1;
+}

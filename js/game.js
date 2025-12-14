@@ -34,12 +34,121 @@ document.addEventListener("DOMContentLoaded", async () => {
   const gameErrorEl = document.getElementById("gameError");
   const gameSuccessEl = document.getElementById("gameSuccess");
 
-  // ★ 追加：過去ゲーム一覧のDOM
+  // 過去ゲーム一覧のDOM
   const gamesListEl = document.getElementById("gamesList");
 
   let members = [];
+  let liveScores = {}; // 進行中ゲームのスコア
+  let liveGameDocRef = null;
 
-  // グループ情報の取得
+  // ===== スコアテーブル描画（±ボタン付き） =====
+  function renderScoreTable() {
+    scoresBody.innerHTML = "";
+
+    if (!members || members.length === 0) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 2;
+      td.textContent = "メンバーが登録されていません。";
+      tr.appendChild(td);
+      scoresBody.appendChild(tr);
+      return;
+    }
+
+    members.forEach(m => {
+      const score = typeof liveScores[m] === "number" ? liveScores[m] : 0;
+
+      const tr = document.createElement("tr");
+
+      const tdName = document.createElement("td");
+      tdName.textContent = m;
+
+      const tdScore = document.createElement("td");
+      const controls = document.createElement("div");
+      controls.className = "score-controls";
+
+      const minusBtn = document.createElement("button");
+      minusBtn.type = "button";
+      minusBtn.textContent = "−";
+      minusBtn.className = "score-btn score-btn-minus";
+
+      const input = document.createElement("input");
+      input.type = "number";
+      input.className = "score-input";
+      input.value = score;
+      input.setAttribute("data-member", m);
+
+      const plusBtn = document.createElement("button");
+      plusBtn.type = "button";
+      plusBtn.textContent = "+";
+      plusBtn.className = "score-btn score-btn-plus";
+
+      // イベント
+      minusBtn.addEventListener("click", () => {
+        changeScore(m, -1);
+      });
+
+      plusBtn.addEventListener("click", () => {
+        changeScore(m, +1);
+      });
+
+      input.addEventListener("change", () => {
+        const v = Number(input.value);
+        const val = isNaN(v) ? 0 : v;
+        setScore(m, val);
+      });
+
+      controls.appendChild(minusBtn);
+      controls.appendChild(input);
+      controls.appendChild(plusBtn);
+
+      tdScore.appendChild(controls);
+
+      tr.appendChild(tdName);
+      tr.appendChild(tdScore);
+      scoresBody.appendChild(tr);
+    });
+  }
+
+  // Firestoreにスコアを反映
+  async function pushLiveScoresToFirestore() {
+    if (!liveGameDocRef) return;
+    try {
+      await liveGameDocRef.set(
+        {
+          scores: liveScores,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        },
+        { merge: true }
+      );
+    } catch (err) {
+      console.error("[game.js] live スコア更新エラー", err);
+    }
+  }
+
+  function setScore(member, value) {
+    liveScores[member] = value;
+    renderScoreTable();
+    pushLiveScoresToFirestore();
+  }
+
+  function changeScore(member, delta) {
+    const current = typeof liveScores[member] === "number" ? liveScores[member] : 0;
+    liveScores[member] = current + delta;
+    renderScoreTable();
+    pushLiveScoresToFirestore();
+  }
+
+  function resetLiveScores() {
+    liveScores = {};
+    members.forEach(m => {
+      liveScores[m] = 0;
+    });
+    renderScoreTable();
+    pushLiveScoresToFirestore();
+  }
+
+  // ===== グループ情報の取得 =====
   try {
     const doc = await db.collection("groups").doc(groupId).get();
     console.log("[game.js] group doc exists =", doc.exists);
@@ -56,15 +165,47 @@ document.addEventListener("DOMContentLoaded", async () => {
     const groupName = data.name || "無題のイベント";
     groupInfoEl.textContent = `グループ：${groupName}（メンバー：${members.join("、")}）`;
 
-    // メンバーごとのスコア入力行を生成
-    renderScoreInputs(members, scoresBody);
+    // liveScores 初期化
+    members.forEach(m => {
+      liveScores[m] = 0;
+    });
+
+    // 進行中ゲーム用ドキュメント参照
+    liveGameDocRef = db
+      .collection("groups")
+      .doc(groupId)
+      .collection("liveGame")
+      .doc("current");
+
+    // 進行中ゲームのリアルタイム購読
+    liveGameDocRef.onSnapshot(snapshot => {
+      if (!snapshot.exists) {
+        // ドキュメントがまだなければ初期化して作成
+        resetLiveScores();
+        return;
+      }
+
+      const data = snapshot.data() || {};
+      const scoresFromDb = data.scores || {};
+
+      // Firestore側のデータで上書き（メンバー分だけ見る）
+      members.forEach(m => {
+        const v = scoresFromDb[m];
+        liveScores[m] = typeof v === "number" ? v : 0;
+      });
+
+      renderScoreTable();
+    });
+
+    // 初回描画
+    renderScoreTable();
   } catch (err) {
     console.error("[game.js] グループ情報取得エラー", err);
     groupInfoEl.textContent = "グループ情報の取得に失敗しました。";
     return;
   }
 
-  // 「ゲーム結果を保存」ボタン
+  // ===== 「ゲーム結果を保存」ボタン =====
   saveGameBtn.addEventListener("click", async () => {
     gameErrorEl.textContent = "";
     gameSuccessEl.textContent = "";
@@ -77,15 +218,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const memo = gameMemoInput.value.trim();
 
-    // scores オブジェクトを組み立て（未入力は0、NaNも0扱い）
-    const scoreInputs = scoresBody.querySelectorAll("input[data-member]");
-    const scores = {};
-    scoreInputs.forEach(input => {
-      const memberName = input.getAttribute("data-member");
-      const value = input.value.trim();
-      const num = Number(value);
-      scores[memberName] = isNaN(num) ? 0 : num;
-    });
+    // 現在の liveScores をそのまま保存
+    const scoresToSave = { ...liveScores };
 
     try {
       await db
@@ -95,25 +229,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         .add({
           name: gameName,
           memo: memo || "",
-          scores,
+          scores: scoresToSave,
           createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
 
-      gameSuccessEl.textContent = "ゲーム結果を保存しました。";
+      // ★ ポップアップを出さずに、そのまま次のゲーム入力へ
+      gameSuccessEl.textContent =
+        "ゲーム結果を保存しました。次のゲームを入力できます。";
 
-      // ★ 保存後は confirm を出さずに即リセットして次の入力へ
-      gameSuccessEl.textContent = "ゲーム結果を保存しました。次のゲームを入力できます。";
-
+      // 入力欄と進行中スコアをリセット
       gameNameInput.value = "";
       gameMemoInput.value = "";
-      resetScoreInputs(scoresBody);
+      resetLiveScores();
 
-      // 入力位置が下にある場合、自動的に画面をスムーズスクロール
+      // 画面を先頭付近にスクロール（任意）
       window.scrollTo({
         top: 0,
         behavior: "smooth"
       });
-
     } catch (err) {
       console.error("[game.js] ゲーム結果保存エラー", err);
       gameErrorEl.textContent =
@@ -121,7 +254,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // ★ 追加：過去のゲーム結果をリアルタイム購読
+  // ===== 過去のゲーム結果をリアルタイム購読 =====
   db.collection("groups")
     .doc(groupId)
     .collection("games")
@@ -154,7 +287,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           dateText = `${yyyy}/${mm}/${dd} ${hh}:${mi}`;
         }
 
-        // カードDOMを組み立て
         const card = document.createElement("div");
         card.className = "game-card";
 
@@ -180,7 +312,6 @@ document.addEventListener("DOMContentLoaded", async () => {
           card.appendChild(memoEl);
         }
 
-        // スコア一覧（テーブル）
         const table = document.createElement("table");
         table.className = "game-card-table";
 
@@ -197,7 +328,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const tbody = document.createElement("tbody");
 
-        // メンバー順で並べたいので、membersをベースに見る
         const names = members.length > 0 ? members : Object.keys(scores);
         names.forEach(name => {
           if (!(name in scores)) return;
@@ -261,47 +391,3 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 });
-
-// メンバーごとのスコア入力行を生成
-function renderScoreInputs(members, tbodyEl) {
-  tbodyEl.innerHTML = "";
-
-  if (members.length === 0) {
-    const tr = document.createElement("tr");
-    const td = document.createElement("td");
-    td.colSpan = 2;
-    td.textContent = "メンバーが登録されていません。";
-    tbodyEl.appendChild(tr);
-    tr.appendChild(td);
-    return;
-  }
-
-  members.forEach(m => {
-    const tr = document.createElement("tr");
-
-    const tdName = document.createElement("td");
-    tdName.textContent = m;
-
-    const tdScore = document.createElement("td");
-    const input = document.createElement("input");
-    input.type = "number";
-    input.step = "1";
-    input.value = "0"; // 未入力=0扱いのため初期値も0
-    input.setAttribute("data-member", m);
-    input.style.width = "80px";
-
-    tdScore.appendChild(input);
-
-    tr.appendChild(tdName);
-    tr.appendChild(tdScore);
-    tbodyEl.appendChild(tr);
-  });
-}
-
-// スコア入力欄をすべて0にリセット
-function resetScoreInputs(tbodyEl) {
-  const scoreInputs = tbodyEl.querySelectorAll("input[data-member]");
-  scoreInputs.forEach(input => {
-    input.value = "0";
-  });
-}
