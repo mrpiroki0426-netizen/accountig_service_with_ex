@@ -194,6 +194,8 @@ th {
   justify-content: space-between;
   padding: 12px;
   border-bottom: 1px solid #eee;
+  white-space: nowrap;     /* ← 改行させない */
+  word-break: keep-all;   /* ← 日本語の強制改行を防ぐ */
 }
 
 .side-menu-title {
