@@ -108,3 +108,30 @@ button.secondary:hover {
   font-size: 0.9rem;
 }
 
+/* ===== タブUI ===== */
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.tab {
+  flex: 1;
+  padding: 10px 0;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.tab:hover {
+  background: #eaeaea;
+}
+
+.tab.active {
+  background: #4a90e2;
+  color: #fff;
+  border-color: #4a90e2;
+  font-weight: bold;
+}

@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const amountInput = document.getElementById("amount");
   const addExpenseBtn = document.getElementById("addExpenseBtn");
 
-  // ★ 共有URL関連
+  // 共有URL関連
   const shareUrlInput = document.getElementById("shareUrl");
   const copyShareUrlBtn = document.getElementById("copyShareUrlBtn");
   const shareUrlMessage = document.getElementById("shareUrlMessage");
@@ -92,8 +92,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     shareUrlInput.value = shareUrl;
   }
 
-  // ★ navigator.share が使える環境ではボタンのラベルを変更（任意）
-  if (navigator.share) {
+  // navigator.share が使える環境ではボタンのラベルを変更（任意）
+  if (navigator.share && copyShareUrlBtn) {
     copyShareUrlBtn.textContent = "共有する";
   }
 
@@ -212,7 +212,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  // ★ 共有URLコピー or 共有シート
+  // 共有URLコピー or 共有シート
   copyShareUrlBtn.addEventListener("click", async () => {
     shareUrlMessage.textContent = "";
 
@@ -223,19 +223,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       url
     };
 
-    // ① Web Share API が使える（主にスマホ）の場合
+    // Web Share API が使える（主にスマホ）の場合
     if (navigator.share) {
       try {
         await navigator.share(shareData);
         shareUrlMessage.textContent = "共有シートを開きました。";
-        return; // ここで終了（コピーには行かない）
+        return;
       } catch (err) {
-        // ユーザーがキャンセルした場合もここに来るので、コピーにフォールバック
         console.warn("navigator.share でキャンセルまたはエラー", err);
       }
     }
 
-    // ② フォールバック：URLコピー
+    // フォールバック：URLコピー
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
         await navigator.clipboard.writeText(url);
@@ -301,4 +300,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       expenseError.textContent = "立て替えの登録に失敗しました。";
     }
   });
+
+  // ===== タブ制御 =====
+  const tabGroup = document.getElementById("tabGroup");
+  const tabGame = document.getElementById("tabGame");
+
+  if (tabGroup && tabGame) {
+    // この画面は「勘定を追加」側なのでこちらをactive
+    tabGroup.classList.add("active");
+
+    tabGroup.addEventListener("click", () => {
+      // すでにこの画面なので何もしない
+    });
+
+    tabGame.addEventListener("click", () => {
+      window.location.href = `game.html?gid=${groupId}`;
+    });
+  }
 });

@@ -13,6 +13,12 @@
   <script src="js/firebase.js"></script>
 </head>
 <body>
+  <!-- 共通タブ（※bodyの最初に置く） -->
+  <div class="tabs">
+    <button id="tabGroup" class="tab">勘定を追加</button>
+    <button id="tabGame" class="tab">ゲーム記録を追加</button>
+  </div>
+
   <div class="container">
     <h1 id="groupName">読み込み中...</h1>
     <p id="membersList"></p>
@@ -42,7 +48,7 @@
     <button id="addExpenseBtn">立て替えを登録</button>
     <p id="expenseError" class="error"></p>
 
-    <!-- ★ 共有URL表示エリア -->
+    <!-- 共有URL表示エリア -->
     <h2>グループの共有URL</h2>
     <div class="form-group">
       <input
