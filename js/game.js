@@ -115,24 +115,51 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     } catch (err) {
       console.error("[game.js] ゲーム結果保存エラー", err);
-      gameErrorEl.textContent = "ゲーム結果の保存に失敗しました。時間をおいて再度お試しください。";
+      gameErrorEl.textContent =
+        "ゲーム結果の保存に失敗しました。時間をおいて再度お試しください。";
     }
   });
 
-  // ===== タブ制御 =====
-  const tabGroup = document.getElementById("tabGroup");
-  const tabGame = document.getElementById("tabGame");
+  // ===== ハンバーガーメニュー制御 =====
+  const menuButton = document.getElementById("menuButton");
+  const sideMenu = document.getElementById("sideMenu");
+  const sideMenuOverlay = document.getElementById("sideMenuOverlay");
+  const closeMenuButton = document.getElementById("closeMenuButton");
+  const navToGroup = document.getElementById("navToGroup");
+  const navToGame = document.getElementById("navToGame");
 
-  if (tabGroup && tabGame) {
-    // この画面は「ゲーム記録を追加」側なのでこちらをactive
-    tabGame.classList.add("active");
+  function openMenu() {
+    if (sideMenu) {
+      sideMenu.classList.add("open");
+    }
+  }
 
-    tabGroup.addEventListener("click", () => {
+  function closeMenu() {
+    if (sideMenu) {
+      sideMenu.classList.remove("open");
+    }
+  }
+
+  if (menuButton) {
+    menuButton.addEventListener("click", openMenu);
+  }
+  if (closeMenuButton) {
+    closeMenuButton.addEventListener("click", closeMenu);
+  }
+  if (sideMenuOverlay) {
+    sideMenuOverlay.addEventListener("click", closeMenu);
+  }
+
+  if (navToGroup) {
+    navToGroup.addEventListener("click", () => {
       window.location.href = `group.html?gid=${groupId}`;
     });
+  }
 
-    tabGame.addEventListener("click", () => {
-      // すでにこの画面なので何もしない
+  if (navToGame) {
+    navToGame.addEventListener("click", () => {
+      // すでにゲーム画面なのでメニューを閉じるだけ
+      closeMenu();
     });
   }
 });

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta charset="UTF-8" />
   <title>割り勘アプリ - ゲームのポイント記録</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="css/style.css" />
 
   <!-- Firebase SDK -->
@@ -14,11 +14,34 @@
   <script src="js/firebase.js"></script>
 </head>
 <body>
-  <!-- 共通タブ（※bodyの最初に置く） -->
-  <div class="tabs">
-    <button id="tabGroup" class="tab">勘定を追加</button>
-    <button id="tabGame" class="tab">ゲーム記録を追加</button>
-  </div>
+  <!-- 共通ヘッダー（ハンバーガー＋タイトル） -->
+  <header class="app-header">
+    <button id="menuButton" class="menu-button" aria-label="メニューを開く">
+      &#9776;
+    </button>
+    <div class="app-header-title">
+      割り勘アプリ
+    </div>
+  </header>
+
+  <!-- サイドメニュー -->
+  <nav id="sideMenu" class="side-menu">
+    <div class="side-menu-overlay" id="sideMenuOverlay"></div>
+    <div class="side-menu-panel">
+      <div class="side-menu-header">
+        <span class="side-menu-title">メニュー</span>
+        <button id="closeMenuButton" class="side-menu-close" aria-label="メニューを閉じる">×</button>
+      </div>
+      <ul class="side-menu-list">
+        <li>
+          <button id="navToGroup" class="side-menu-item">勘定を追加</button>
+        </li>
+        <li>
+          <button id="navToGame" class="side-menu-item">ゲーム記録を追加</button>
+        </li>
+      </ul>
+    </div>
+  </nav>
 
   <div class="container">
     <h1>ゲームのポイント記録</h1>
