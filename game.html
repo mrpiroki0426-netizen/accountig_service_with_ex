@@ -34,10 +34,10 @@
       </div>
       <ul class="side-menu-list">
         <li>
-          <button id="navToGroup" class="side-menu-item">支払いを登録</button>
+          <button id="navToGroup" class="side-menu-item">勘定を追加</button>
         </li>
         <li>
-          <button id="navToGame" class="side-menu-item">ゲーム記録を登録</button>
+          <button id="navToGame" class="side-menu-item">ゲーム記録を追加</button>
         </li>
       </ul>
     </div>
@@ -75,8 +75,11 @@
 
     <button id="saveGameBtn">ゲーム結果を保存</button>
     <p id="gameError" class="error"></p>
-
     <p id="gameSuccess" class="helper"></p>
+
+    <!-- ▼ 追加：過去のゲーム結果一覧 ▼ -->
+    <h2>過去のゲーム結果</h2>
+    <div id="gamesList" class="games-list"></div>
   </div>
 
   <script src="js/game.js"></script>

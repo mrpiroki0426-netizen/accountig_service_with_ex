@@ -34,6 +34,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const gameErrorEl = document.getElementById("gameError");
   const gameSuccessEl = document.getElementById("gameSuccess");
 
+  // ★ 追加：過去ゲーム一覧のDOM
+  const gamesListEl = document.getElementById("gamesList");
+
   let members = [];
 
   // グループ情報の取得
@@ -98,27 +101,122 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       gameSuccessEl.textContent = "ゲーム結果を保存しました。";
 
-      // 保存後の挙動：同じ画面で続けるか、勘定の画面に戻るか選択
-      const again = confirm(
-        "ゲーム結果を保存しました。\nこのグループで新しいゲームを記録しますか？"
-      );
+      // ★ 保存後は confirm を出さずに即リセットして次の入力へ
+      gameSuccessEl.textContent = "ゲーム結果を保存しました。次のゲームを入力できます。";
 
-      if (again) {
-        // フォームをリセットして、次のゲーム入力へ
-        gameNameInput.value = "";
-        gameMemoInput.value = "";
-        resetScoreInputs(scoresBody);
-        gameSuccessEl.textContent = "次のゲームを入力できます。";
-      } else {
-        // 勘定の画面（group.html）に戻る
-        window.location.href = `group.html?gid=${groupId}`;
-      }
+      gameNameInput.value = "";
+      gameMemoInput.value = "";
+      resetScoreInputs(scoresBody);
+
+      // 入力位置が下にある場合、自動的に画面をスムーズスクロール
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+
     } catch (err) {
       console.error("[game.js] ゲーム結果保存エラー", err);
       gameErrorEl.textContent =
         "ゲーム結果の保存に失敗しました。時間をおいて再度お試しください。";
     }
   });
+
+  // ★ 追加：過去のゲーム結果をリアルタイム購読
+  db.collection("groups")
+    .doc(groupId)
+    .collection("games")
+    .orderBy("createdAt", "desc")
+    .onSnapshot(snapshot => {
+      gamesListEl.innerHTML = "";
+
+      if (snapshot.empty) {
+        const p = document.createElement("p");
+        p.className = "helper";
+        p.textContent = "まだゲーム結果が登録されていません。";
+        gamesListEl.appendChild(p);
+        return;
+      }
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const gameName = data.name || "名前なしゲーム";
+        const memo = data.memo || "";
+        const scores = data.scores || {};
+        let dateText = "日時未記録";
+
+        if (data.createdAt && data.createdAt.toDate) {
+          const d = data.createdAt.toDate();
+          const yyyy = d.getFullYear();
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const dd = String(d.getDate()).padStart(2, "0");
+          const hh = String(d.getHours()).padStart(2, "0");
+          const mi = String(d.getMinutes()).padStart(2, "0");
+          dateText = `${yyyy}/${mm}/${dd} ${hh}:${mi}`;
+        }
+
+        // カードDOMを組み立て
+        const card = document.createElement("div");
+        card.className = "game-card";
+
+        const header = document.createElement("div");
+        header.className = "game-card-header";
+
+        const titleEl = document.createElement("div");
+        titleEl.className = "game-card-title";
+        titleEl.textContent = gameName;
+
+        const dateEl = document.createElement("div");
+        dateEl.className = "game-card-date";
+        dateEl.textContent = dateText;
+
+        header.appendChild(titleEl);
+        header.appendChild(dateEl);
+        card.appendChild(header);
+
+        if (memo) {
+          const memoEl = document.createElement("div");
+          memoEl.className = "game-card-memo";
+          memoEl.textContent = memo;
+          card.appendChild(memoEl);
+        }
+
+        // スコア一覧（テーブル）
+        const table = document.createElement("table");
+        table.className = "game-card-table";
+
+        const thead = document.createElement("thead");
+        const trHead = document.createElement("tr");
+        const thMember = document.createElement("th");
+        thMember.textContent = "メンバー";
+        const thScore = document.createElement("th");
+        thScore.textContent = "ポイント";
+        trHead.appendChild(thMember);
+        trHead.appendChild(thScore);
+        thead.appendChild(trHead);
+        table.appendChild(thead);
+
+        const tbody = document.createElement("tbody");
+
+        // メンバー順で並べたいので、membersをベースに見る
+        const names = members.length > 0 ? members : Object.keys(scores);
+        names.forEach(name => {
+          if (!(name in scores)) return;
+          const tr = document.createElement("tr");
+          const tdName = document.createElement("td");
+          const tdScore = document.createElement("td");
+          tdName.textContent = name;
+          tdScore.textContent = scores[name];
+          tr.appendChild(tdName);
+          tr.appendChild(tdScore);
+          tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        card.appendChild(table);
+
+        gamesListEl.appendChild(card);
+      });
+    });
 
   // ===== ハンバーガーメニュー制御 =====
   const menuButton = document.getElementById("menuButton");
