@@ -365,12 +365,17 @@ th {
 .score-controls {
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: flex-end; /* 右寄せでスッキリ */
+  gap: 6px;
 }
 
+
 .score-input {
-  width: 64px;
-  text-align: right;
+  width: 72px;          /* ← ここがポイント（好みで 60〜80px） */
+  min-width: 72px;
+  text-align: center;
+  font-size: 16px;
+  padding: 6px 4px;
 }
 
 .score-btn {
