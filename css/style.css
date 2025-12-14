@@ -1,5 +1,6 @@
 /* css/style.css */
 
+/* ===== ベースレイアウト ===== */
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: #f5f7fb;
@@ -40,6 +41,7 @@ select {
   box-sizing: border-box;
 }
 
+/* ===== ボタン ===== */
 button {
   padding: 8px 16px;
   border-radius: 999px;
@@ -54,11 +56,27 @@ button:hover {
   opacity: 0.9;
 }
 
+button.secondary {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+button.secondary:hover {
+  background: #d1d5db;
+}
+
+/* ===== メッセージ ===== */
 .error {
   color: #e11d48;
   margin-top: 8px;
 }
 
+.helper {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* ===== テーブル ===== */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -75,6 +93,7 @@ th {
   background: #f3f4f6;
 }
 
+/* ===== インラインレイアウト ===== */
 .inline {
   display: flex;
   gap: 8px;
@@ -84,15 +103,7 @@ th {
   flex: 1;
 }
 
-button.secondary {
-  background: #e5e7eb;
-  color: #111827;
-}
-
-button.secondary:hover {
-  background: #d1d5db;
-}
-
+/* ===== メンバーリスト（タグ風） ===== */
 .member-list {
   list-style: none;
   padding-left: 0;
@@ -108,140 +119,27 @@ button.secondary:hover {
   font-size: 0.9rem;
 }
 
-/* ===== タブUI ===== */
-.tabs {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.tab {
-  flex: 1;
-  padding: 10px 0;
-  font-size: 14px;
-  border: 1px solid #ccc;
-  background: #f5f5f5;
-  cursor: pointer;
-  border-radius: 6px;
-}
-
-.tab:hover {
-  background: #eaeaea;
-}
-
-.tab.active {
-  background: #4a90e2;
-  color: #fff;
-  border-color: #4a90e2;
-  font-weight: bold;
-}
-
-/* ===== スマホ最適化（幅600px以下） ===== */
-@media (max-width: 600px) {
-  body {
-    background: #f5f7fb;
-  }
-
-  /* カードを「画面いっぱい」に近づける */
-  .container {
-    max-width: 100%;
-    margin: 0;
-    padding: 16px 12px;
-    border-radius: 0;
-    box-shadow: none;
-  }
-
-  h1 {
-    font-size: 20px;
-    margin: 8px 0 12px;
-  }
-
-  h2 {
-    font-size: 16px;
-    margin-top: 16px;
-  }
-
-  /* フォームまわりの文字を少し小さめ＆詰め気味に */
-  .form-group label {
-    font-size: 14px;
-  }
-
-  input,
-  textarea,
-  select {
-    font-size: 16px; /* iOS の拡大を防ぐライン */
-    padding: 8px;
-  }
-
-  /* ボタンは基本フル幅にしてタップしやすく */
-  button {
-    width: 100%;
-    padding: 10px 0;
-    font-size: 16px;
-  }
-
-  /* タブを上部に固定して“アプリ感”を出す */
-  .tabs {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    padding: 8px 8px 0;
-    background: #f5f7fb;
-  }
-
-  .tab {
-    padding: 8px 0;
-    font-size: 13px;
-  }
-
-  /* テーブルは横スクロールで無理に詰まない */
-  table {
-    font-size: 13px;
-  }
-
-  #expensesTable,
-  #scoresTable {
-    display: block;
-    width: 100%;
-    overflow-x: auto;
-  }
-
-  #expensesTable thead,
-  #scoresTable thead {
-    white-space: nowrap;
-  }
-
-  /* メンバー一覧など、縦長になりがちなリスト用 */
-  .member-list {
-    max-height: 200px;
-    overflow-y: auto;
-  }
-}
-
-@media (max-width: 600px) {
-  .tabs {
-    gap: 4px;
-  }
-
-  .tab {
-    border-radius: 999px; /* pill型にすると一気にネイティブアプリ感 */
-  }
-}
-
-/* ===== 共通ヘッダー ===== */
+/* ===== 共通ヘッダー（スマホ最適化・左ハンバーガー） ===== */
 .app-header {
+  position: relative;              /* 絶対配置の基準 */
   display: flex;
   align-items: center;
-  padding: 8px 12px;
+  justify-content: center;         /* タイトルを中央寄せ */
+  height: 48px;
+  padding: 0 12px;
   background: #4a90e2;
   color: #fff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  position: sticky;
   top: 0;
   z-index: 20;
 }
 
+/* ハンバーガーボタンを左端に固定 */
 .menu-button {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   border: none;
   background: transparent;
   color: #fff;
@@ -250,10 +148,12 @@ button.secondary:hover {
   cursor: pointer;
 }
 
+/* タイトルは完全中央 */
 .app-header-title {
-  margin-left: 8px;
   font-size: 16px;
   font-weight: bold;
+  text-align: center;
+  pointer-events: none; /* タイトル上タップ誤動作防止 */
 }
 
 /* ===== サイドメニュー ===== */
@@ -279,7 +179,7 @@ button.secondary:hover {
   width: 70%;
   max-width: 260px;
   height: 100%;
-  background: #ffffff;
+  background: #fff;
   box-shadow: 2px 0 6px rgba(0, 0, 0, 0.2);
   transform: translateX(-100%);
   transition: transform 0.2s ease;
@@ -298,6 +198,7 @@ button.secondary:hover {
 .side-menu-title {
   font-size: 16px;
   font-weight: bold;
+  color: #000;
 }
 
 .side-menu-close {
@@ -321,11 +222,12 @@ button.secondary:hover {
   text-align: left;
   font-size: 15px;
   cursor: pointer;
-  color: #000000;
+  color: #000; /* メニュー文字は黒でくっきり */
 }
 
 .side-menu-item:hover {
-  background: #4c71d6;
+  background: #f5f5f5;
+  color: #000;
 }
 
 /* メニューが開いた状態 */
@@ -341,8 +243,12 @@ button.secondary:hover {
   transform: translateX(0);
 }
 
-/* スマホ向け微調整 */
+/* ===== スマホ最適化（幅600px以下） ===== */
 @media (max-width: 600px) {
+  body {
+    background: #f5f7fb;
+  }
+
   .container {
     max-width: 100%;
     margin: 0;
@@ -351,7 +257,46 @@ button.secondary:hover {
     box-shadow: none;
   }
 
-  button {
+  h1 {
+    font-size: 20px;
+    margin: 8px 0 12px;
+  }
+
+  h2 {
     font-size: 16px;
+    margin-top: 16px;
+  }
+
+  .form-group label {
+    font-size: 14px;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px; /* iOS の拡大を防ぐライン */
+    padding: 8px;
+  }
+
+  button {
+    width: 100%;
+    padding: 10px 0;
+    font-size: 16px;
+  }
+
+  table {
+    font-size: 13px;
+  }
+
+  #expensesTable,
+  #scoresTable {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  #expensesTable thead,
+  #scoresTable thead {
+    white-space: nowrap;
   }
 }
