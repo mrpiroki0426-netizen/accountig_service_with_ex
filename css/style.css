@@ -146,6 +146,7 @@ th {
   font-size: 22px;
   padding: 4px 8px;
   cursor: pointer;
+  width: auto; /* スマホ用の幅100%を無効化 */
 }
 
 /* タイトルは完全中央 */
@@ -278,7 +279,8 @@ th {
     padding: 8px;
   }
 
-  button {
+  /* ハンバーガー以外のボタンだけフル幅にする */
+  button:not(.menu-button) {
     width: 100%;
     padding: 10px 0;
     font-size: 16px;
