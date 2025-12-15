@@ -34,10 +34,10 @@
       </div>
       <ul class="side-menu-list">
         <li>
-          <button id="navToGroup" class="side-menu-item"> 支払いを登録</button>
+          <button id="navToGroup" class="side-menu-item"> 支払いを記録</button>
         </li>
         <li>
-          <button id="navToGame" class="side-menu-item"> ゲーム記録を登録</button>
+          <button id="navToGame" class="side-menu-item"> ゲームを記録</button>
         </li>
       </ul>
     </div>
@@ -47,7 +47,7 @@
     <h1 id="groupName">読み込み中...</h1>
     <p id="membersList"></p>
 
-    <h2>立て替えを追加</h2>
+    <h2>支払いを追加</h2>
     <div class="form-group">
       <label for="title">項目名</label>
       <input type="text" id="title" placeholder="例：1日目の夕食" />
@@ -69,7 +69,7 @@
       <button id="selectAllBtn" type="button">全員選択</button>
     </div>
 
-    <button id="addExpenseBtn">立て替えを登録</button>
+    <button id="addExpenseBtn">支払いを登録</button>
     <p id="expenseError" class="error"></p>
 
     <!-- 共有URL表示エリア -->
@@ -87,7 +87,7 @@
       <p id="shareUrlMessage" class="helper"></p>
     </div>
 
-    <h2>立て替え一覧</h2>
+    <h2>支払い一覧</h2>
     <table id="expensesTable">
       <thead>
         <tr>
@@ -107,4 +107,8 @@
   <!-- JS はここで 1 回だけ読み込む -->
   <script src="js/group.js"></script>
 </body>
+<footer>
+  <a href="privacy.html">プライバシーポリシー</a>
+</footer>
+
 </html>
