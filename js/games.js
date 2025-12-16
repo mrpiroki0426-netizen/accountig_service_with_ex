@@ -92,6 +92,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const card = document.createElement("div");
         card.className = "game-card";
+        const isLocked = Boolean(d.ratingConfirmed);
+        if (isLocked) {
+          card.style.backgroundColor = "#f3f4f6";
+          card.style.borderColor = "#cbd5e1";
+        }
 
         const header = document.createElement("div");
         header.className = "game-card-header";
@@ -109,16 +114,58 @@ document.addEventListener("DOMContentLoaded", async () => {
         headerRight.style.alignItems = "center";
         headerRight.style.gap = "8px";
 
-        const editBtn = document.createElement("button");
-        editBtn.type = "button";
-        editBtn.textContent = "編集";
-        editBtn.className = "secondary";
-        editBtn.addEventListener("click", () => {
-          openEditModal(gameDoc.id, d);
+        const confirmBtn = document.createElement("button");
+        confirmBtn.type = "button";
+        confirmBtn.textContent = d.ratingConfirmed ? "確定済み" : "結果確定";
+        confirmBtn.style.backgroundColor = "#2563eb";
+        confirmBtn.style.borderColor = "#2563eb";
+        confirmBtn.style.color = "#fff";
+        confirmBtn.disabled = Boolean(d.ratingConfirmed);
+        confirmBtn.addEventListener("click", async () => {
+          confirmBtn.disabled = true;
+          try {
+            await confirmGameResult(gameDoc.id);
+            confirmBtn.textContent = "確定済み";
+          } catch (err) {
+            console.error("[games.js] 結果確定エラー", err);
+            alert("結果の確定に失敗しました。時間をおいて再度お試しください。");
+            confirmBtn.disabled = false;
+          }
+        });
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.textContent = "削除";
+        deleteBtn.className = "secondary";
+        deleteBtn.addEventListener("click", async () => {
+          const ok = window.confirm("このゲーム結果を削除しますか？");
+          if (!ok) return;
+          try {
+            await dbRef
+              .collection("groups")
+              .doc(groupId)
+              .collection("games")
+              .doc(gameDoc.id)
+              .delete();
+          } catch (err) {
+            console.error("[games.js] ゲーム削除エラー", err);
+            alert("削除に失敗しました。時間をおいて再度お試しください。");
+          }
         });
 
         headerRight.appendChild(dateEl);
-        headerRight.appendChild(editBtn);
+        headerRight.appendChild(confirmBtn);
+        if (!isLocked) {
+          const editBtn = document.createElement("button");
+          editBtn.type = "button";
+          editBtn.textContent = "編集";
+          editBtn.className = "secondary";
+          editBtn.addEventListener("click", () => {
+            window.location.href = `addgame.html?gid=${groupId}&gameId=${gameDoc.id}`;
+          });
+          headerRight.appendChild(editBtn);
+        }
+        headerRight.appendChild(deleteBtn);
 
         header.appendChild(titleEl);
         header.appendChild(headerRight);
@@ -179,6 +226,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const navToGroup = document.getElementById("navToGroup");
   const navToGame = document.getElementById("navToGame");
+  const navToSettle = document.getElementById("navToSettle");
 
   function openMenu() {
     sideMenu?.classList.add("open");
@@ -198,163 +246,23 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   navToGame?.addEventListener("click", closeMenu);
 
-  // ===== 編集モーダル =====
-  function openEditModal(docId, gameData) {
-    const scores = gameData.scores || {};
-    const names = members.length > 0 ? members : Object.keys(scores);
+  navToSettle?.addEventListener("click", () => {
+    window.location.href = `settlement.html?gid=${groupId}`;
+  });
 
-    const overlay = document.createElement("div");
-    overlay.style.position = "fixed";
-    overlay.style.inset = "0";
-    overlay.style.background = "rgba(0,0,0,0.45)";
-    overlay.style.display = "flex";
-    overlay.style.alignItems = "center";
-    overlay.style.justifyContent = "center";
-    overlay.style.zIndex = "1000";
-
-    const modal = document.createElement("div");
-    modal.style.background = "#fff";
-    modal.style.padding = "16px";
-    modal.style.borderRadius = "8px";
-    modal.style.width = "min(520px, 90%)";
-    modal.style.boxShadow = "0 10px 30px rgba(0,0,0,0.12)";
-    modal.style.maxHeight = "90vh";
-    modal.style.overflowY = "auto";
-
-    const title = document.createElement("h3");
-    title.textContent = "ゲーム結果を編集";
-    modal.appendChild(title);
-
-    const nameGroup = document.createElement("div");
-    nameGroup.className = "form-group";
-    const nameLabel = document.createElement("label");
-    nameLabel.textContent = "ゲーム名";
-    const nameInput = document.createElement("input");
-    nameInput.type = "text";
-    nameInput.value = gameData.name || "";
-    nameInput.style.width = "100%";
-    nameGroup.appendChild(nameLabel);
-    nameGroup.appendChild(nameInput);
-    modal.appendChild(nameGroup);
-
-    const memoGroup = document.createElement("div");
-    memoGroup.className = "form-group";
-    const memoLabel = document.createElement("label");
-    memoLabel.textContent = "メモ";
-    const memoInput = document.createElement("textarea");
-    memoInput.value = gameData.memo || "";
-    memoInput.rows = 2;
-    memoInput.style.width = "100%";
-    memoGroup.appendChild(memoLabel);
-    memoGroup.appendChild(memoInput);
-    modal.appendChild(memoGroup);
-
-    const table = document.createElement("table");
-    table.className = "game-card-table";
-    const thead = document.createElement("thead");
-    const trHead = document.createElement("tr");
-    const thMember = document.createElement("th");
-    thMember.textContent = "メンバー";
-    const thScore = document.createElement("th");
-    thScore.textContent = "ポイント";
-    trHead.appendChild(thMember);
-    trHead.appendChild(thScore);
-    thead.appendChild(trHead);
-    table.appendChild(thead);
-
-    const tbody = document.createElement("tbody");
-    names.forEach((name) => {
-      const tr = document.createElement("tr");
-      const tdName = document.createElement("td");
-      tdName.textContent = name;
-      const tdScore = document.createElement("td");
-      const input = document.createElement("input");
-      input.type = "number";
-      input.value = String(typeof scores[name] === "number" ? scores[name] : 0);
-      input.style.width = "100%";
-      input.setAttribute("data-member", name);
-      tdScore.appendChild(input);
-      tr.appendChild(tdName);
-      tr.appendChild(tdScore);
-      tbody.appendChild(tr);
-    });
-    table.appendChild(tbody);
-    modal.appendChild(table);
-
-    const message = document.createElement("p");
-    message.className = "helper";
-    message.style.marginTop = "8px";
-    modal.appendChild(message);
-
-    const actionRow = document.createElement("div");
-    actionRow.style.display = "flex";
-    actionRow.style.gap = "8px";
-    actionRow.style.justifyContent = "flex-end";
-    actionRow.style.marginTop = "12px";
-
-    const cancelBtn = document.createElement("button");
-    cancelBtn.type = "button";
-    cancelBtn.textContent = "キャンセル";
-    cancelBtn.className = "secondary";
-
-    const saveBtn = document.createElement("button");
-    saveBtn.type = "button";
-    saveBtn.textContent = "保存";
-
-    actionRow.appendChild(cancelBtn);
-    actionRow.appendChild(saveBtn);
-    modal.appendChild(actionRow);
-
-    overlay.appendChild(modal);
-    document.body.appendChild(overlay);
-
-    function cleanup() {
-      overlay.remove();
-    }
-
-    cancelBtn.addEventListener("click", cleanup);
-    overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) cleanup();
-    });
-
-    saveBtn.addEventListener("click", async () => {
-      message.textContent = "";
-      saveBtn.disabled = true;
-      cancelBtn.disabled = true;
-
-      const nameVal = nameInput.value.trim();
-      const memoVal = memoInput.value.trim();
-      const inputs = tbody.querySelectorAll("input[data-member]");
-      const newScores = {};
-      inputs.forEach((inp) => {
-        const mem = inp.getAttribute("data-member");
-        const val = Number(inp.value);
-        newScores[mem] = Number.isFinite(val) ? val : 0;
-      });
-
-      try {
-        await dbRef
-          .collection("groups")
-          .doc(groupId)
-          .collection("games")
-          .doc(docId)
-          .set(
-            {
-              name: nameVal || null,
-              memo: memoVal || "",
-              scores: newScores,
-              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-            },
-            { merge: true }
-          );
-        cleanup();
-      } catch (err) {
-        console.error("[games.js] ゲーム結果更新エラー", err);
-        message.textContent = "更新に失敗しました。もう一度お試しください。";
-      } finally {
-        saveBtn.disabled = false;
-        cancelBtn.disabled = false;
-      }
-    });
+  // ===== 結果確定処理 =====
+  async function confirmGameResult(docId) {
+    await dbRef
+      .collection("groups")
+      .doc(groupId)
+      .collection("games")
+      .doc(docId)
+      .set(
+        {
+          ratingConfirmed: true,
+          ratingAppliedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        },
+        { merge: true }
+      );
   }
 });

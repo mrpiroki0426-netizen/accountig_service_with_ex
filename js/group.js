@@ -320,6 +320,7 @@ function getGroupIdFromQuery() {
   const navToGame = document.getElementById("navToGame");
   const navToAbout = document.getElementById("navToAbout");
   const navToContact = document.getElementById("navToContact");
+  const navToSettle = document.getElementById("navToSettle");
 
   function openMenu() {
     sideMenu?.classList.add("open");
@@ -337,6 +338,10 @@ function getGroupIdFromQuery() {
 
   navToGame?.addEventListener("click", () => {
     window.location.href = `game.html?gid=${groupId}`;
+  });
+
+  navToSettle?.addEventListener("click", () => {
+    window.location.href = `settlement.html?gid=${groupId}`;
   });
 
   // navToAbout and navToContact removed

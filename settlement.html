@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>割り勘アプリ - ゲームのポイント記録</title>
+  <title>割り勘アプリ - 精算状況</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="css/style.css" />
 
@@ -32,22 +32,20 @@
         <span class="side-menu-title">メニュー</span>
         <button id="closeMenuButton" class="side-menu-close" aria-label="メニューを閉じる">×</button>
       </div>
-    <ul class="side-menu-list">
-      <li><button id="navToGroup"   class="side-menu-item">勘定を追加</button></li>
-      <li><button id="navToGame"    class="side-menu-item">ゲーム記録を追加</button></li>
-      <li><button id="navToSettle"  class="side-menu-item">精算を確認</button></li>
-    </ul>
+      <ul class="side-menu-list">
+        <li><button id="navToGroup"   class="side-menu-item">勘定を追加</button></li>
+        <li><button id="navToGame"    class="side-menu-item">ゲーム記録を追加</button></li>
+        <li><button id="navToSettle"  class="side-menu-item">精算を確認</button></li>
+      </ul>
 
     </div>
   </nav>
 
   <div class="container">
-    <h1>ゲームのポイント記録</h1>
+    <h1>精算状況</h1>
 
-    <!-- グループ情報 -->
     <p id="groupInfo">グループ情報を読み込み中...</p>
 
-    <!-- 共有URL -->
     <h2>共有リンク</h2>
     <div class="form-group">
       <input type="text" id="shareUrl" readonly style="width: 100%;" />
@@ -55,29 +53,49 @@
       <p id="shareUrlMessage" class="helper"></p>
     </div>
 
-    <h2>ゲーム情報</h2>
-    <div class="form-group">
-      <label for="gameName">ゲーム名</label>
-      <input type="text" id="gameName" placeholder="例：大富豪1回目" />
-    </div>
-
-    <h2>メンバーごとのポイント</h2>
-    <table id="scoresTable">
+    <h2>レーティング（最新ゲームから算出）</h2>
+    <p id="ratingInfo" class="helper"></p>
+    <table id="ratingsTable">
       <thead>
         <tr>
           <th>メンバー</th>
-          <th>ポイント</th>
+          <th>レーティング（1=基準）</th>
         </tr>
       </thead>
-      <tbody id="scoresBody"></tbody>
+      <tbody id="ratingsBody"></tbody>
     </table>
 
-    <button id="saveGameBtn">ゲーム結果を保存</button>
-    <p id="gameError" class="error"></p>
-    <p id="gameSuccess" class="helper"></p>
+    <h2>支払い一覧</h2>
+    <table id="expensesTable">
+      <thead>
+        <tr>
+          <th>項目</th>
+          <th>金額</th>
+          <th>支払った人</th>
+          <th>対象</th>
+        </tr>
+      </thead>
+      <tbody id="expensesBody"></tbody>
+    </table>
+
+    <h2>精算結果</h2>
+    <ul id="settlementList"></ul>
+
+    <h2>メンバー別の支出・貸し借り合計</h2>
+    <table id="totalsTable">
+      <thead>
+        <tr>
+          <th>メンバー</th>
+          <th>支出合計</th>
+          <th>負担合計</th>
+          <th>差額（＋受取 / －支払い）</th>
+        </tr>
+      </thead>
+      <tbody id="totalsBody"></tbody>
+    </table>
   </div>
 
-  <script src="js/addgame.js"></script>
+  <script src="js/settlement.js"></script>
 </body>
 <footer>
   <a href="about.html">サービス説明</a> | <a href="contact.html">お問い合わせ</a> | <a href="privacy.html">プライバシーポリシー</a>
