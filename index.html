@@ -1,51 +1,143 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta charset="UTF-8" />
-  <title>割り勘アプリ - グループ作成</title>
-  <link rel="stylesheet" href="./css/style.css" />
-
-  <!-- Firebase SDK (compat版) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
-  <!-- Firebase設定 -->
-  <script src="js/firebase.js"></script>
+  <title>割り勘アプリ｜割り勘＋ゲーム得点をURLで共有</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="飲み会・旅行の割り勘と、ゲームの得点管理をまとめて。URL共有でみんな同じ画面を見ながら記録できます。" />
+  <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <div class="container">
-    <h1>割り勘グループを作成</h1>
+  <!-- 共通ヘッダー -->
+  <header class="app-header">
+    <button id="menuButton" class="menu-button" aria-label="メニューを開く">
+      &#9776;
+    </button>
+    <div class="app-header-title">割り勘アプリ</div>
+  </header>
 
-    <div class="form-group">
-      <label for="eventName">イベント名</label>
-      <input type="text" id="eventName" placeholder="例：沖縄旅行、忘年会" />
-    </div>
-
-    <div class="form-group">
-      <label for="memberName">メンバーを追加</label>
-
-      <div class="inline">
-        <input type="text" id="memberName" placeholder="例：しみしゅん" />
-        <button type="button" id="addMemberBtn" class="secondary">
-          追加
-        </button>
+  <!-- サイドメニュー（統合版） -->
+  <nav id="sideMenu" class="side-menu">
+    <div class="side-menu-overlay" id="sideMenuOverlay"></div>
+    <div class="side-menu-panel">
+      <div class="side-menu-header">
+        <span class="side-menu-title">メニュー</span>
+        <button id="closeMenuButton" class="side-menu-close" aria-label="メニューを閉じる">×</button>
       </div>
+      <ul class="side-menu-list">
+        <li><button id="navToApp" class="side-menu-item">今すぐ使う</button></li>
+        <li><button id="navToHow" class="side-menu-item">使い方</button></li>
+        <li><button id="navToScenes" class="side-menu-item">想定シーン</button></li>
+        <li><button id="navToFuture" class="side-menu-item">今後の機能</button></li>
+      </ul>
+    </div>
+  </nav>
 
-      <p class="helper">追加済みメンバー：</p>
-      <ul id="memberList" class="member-list"></ul>
+  <div class="container">
+    <!-- ===== ヒーロー（LP） ===== -->
+    <h1>割り勘も、ゲームの得点も。<br>URLで共有して、その場で決着。</h1>
+
+    <p>
+      飲み会・旅行・ボードゲーム会で発生する<br>
+      <strong>「立て替え」</strong>と<strong>「得点」</strong>を1つのグループにまとめて記録できます。
+    </p>
+
+    <div class="form-group">
+      <button id="ctaStartBtn">今すぐ使う（グループ作成へ）</button>
+      <p class="helper" style="margin-top:8px;">
+        お問い合わせ：<a href="contact.html">こちら</a>
+      </p>
     </div>
 
+    <h2>できること</h2>
+    <ul>
+      <li>グループを作成してURLで共有</li>
+      <li>立て替え入力 → 自動で精算が分かる</li>
+      <li>ゲーム得点をリアルタイムで共有・記録</li>
+    </ul>
 
-    <button id="createGroupBtn">グループを作成</button>
+    <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;">
 
-    <p id="errorMessage" class="error"></p>
+    <!-- ===== ここからサービス説明（旧 about 内容） ===== -->
+    <h2 id="howto">使い方（かんたん3ステップ）</h2>
+    <ol>
+      <li>トップ（グループ作成）でイベント名・メンバーを登録</li>
+      <li>作成されたURLをLINEに貼って共有</li>
+      <li>「勘定」「ゲーム記録」を入力し、みんなで同じ画面を確認</li>
+    </ol>
+
+    <h2>補足</h2>
+    <ul>
+      <li>アプリのインストール不要（Webで動きます）</li>
+      <li>未入力＝0など、入力の手間を減らす設計です</li>
+    </ul>
+
+    <h2 id="scenes">想定シーン</h2>
+    <ul>
+      <li>友だちとの旅行・合宿の精算</li>
+      <li>宅飲みでの割り勘＋ミニゲームの得点管理</li>
+      <li>ボードゲーム会・カードゲーム会でのスコアボード</li>
+    </ul>
+
+    <h2 id="future">今後追加予定の機能（例）</h2>
+    <ul>
+      <li>精算結果のスクリーンショット用レイアウト</li>
+      <li>ゲーム別のランキング表示</li>
+      <li>よく使うメンバーのテンプレート登録</li>
+    </ul>
+
+    <p class="helper">
+      ご意見・ご要望があれば、<a href="contact.html">お問い合わせページ</a>からぜひ教えてください。
+    </p>
   </div>
 
-  <script src="js/index.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // ハンバーガー
+      const menuButton = document.getElementById("menuButton");
+      const sideMenu = document.getElementById("sideMenu");
+      const sideMenuOverlay = document.getElementById("sideMenuOverlay");
+      const closeMenuButton = document.getElementById("closeMenuButton");
+
+      // メニュー項目
+      const navToApp = document.getElementById("navToApp");
+      const navToHow = document.getElementById("navToHow");
+      const navToScenes = document.getElementById("navToScenes");
+      const navToFuture = document.getElementById("navToFuture");
+      const navToContact = document.getElementById("navToContact");
+
+      // CTA
+      const ctaStartBtn = document.getElementById("ctaStartBtn");
+
+      function openMenu(){ sideMenu?.classList.add("open"); }
+      function closeMenu(){ sideMenu?.classList.remove("open"); }
+
+      menuButton?.addEventListener("click", openMenu);
+      closeMenuButton?.addEventListener("click", closeMenu);
+      sideMenuOverlay?.addEventListener("click", closeMenu);
+
+      // 遷移
+      navToApp?.addEventListener("click", () => { window.location.href = "app.html"; });
+
+      // ページ内スクロール
+      function scrollToId(id) {
+        const el = document.getElementById(id);
+        if (!el) return;
+        closeMenu();
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+
+      navToHow?.addEventListener("click", () => scrollToId("howto"));
+      navToScenes?.addEventListener("click", () => scrollToId("scenes"));
+      navToFuture?.addEventListener("click", () => scrollToId("future"));
+
+      navToContact?.addEventListener("click", () => { window.location.href = "contact.html"; });
+
+      ctaStartBtn?.addEventListener("click", () => { window.location.href = "app.html"; });
+    });
+  </script>
 </body>
 <footer>
-  <a href="privacy.html">プライバシーポリシー</a>
+  <a href="about.html">サービス説明</a> | <a href="contact.html">お問い合わせ</a> | <a href="privacy.html">プライバシーポリシー</a>
 </footer>
-
 </html>

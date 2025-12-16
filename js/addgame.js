@@ -1,4 +1,4 @@
-// js/game.js
+// js/addgame.js
 
 // URLパラメータから gid を取得
 function getGroupIdFromQuery() {
@@ -19,7 +19,7 @@ function buildDefaultGameName() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   const groupId = getGroupIdFromQuery();
-  console.log("[game.js] groupId =", groupId);
+  console.log("[addgame.js] groupId =", groupId);
 
   // Firestore参照（firebase.js が db または window.db を作っている前提）
   const dbRef =
@@ -75,10 +75,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   // データ保持
   let members = [];
   let liveScores = {}; // 進行中ゲームのスコア
-  let liveGameDocRef = null;
+  const groupDocRef = dbRef.collection("groups").doc(groupId);
+  const liveGameDocRef = groupDocRef.collection("liveGame").doc("current");
+  let unsubscribeLiveGame = null;
 
   // ===== スコアテーブル描画（±ボタン付き） =====
   function renderScoreTable() {
+    console.log("[addgame.js] renderScoreTable called, members:", members, "liveScores:", liveScores);
     if (!scoresBody) return;
 
     scoresBody.innerHTML = "";
@@ -174,158 +177,63 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function resetLiveScores() {
+    console.log("[addgame.js] resetLiveScores called");
     liveScores = {};
     members.forEach((m) => (liveScores[m] = 0));
     renderScoreTable();
     pushLiveScoresToFirestore();
   }
 
-  // ===== グループ情報の取得 =====
-  try {
-    const doc = await dbRef.collection("groups").doc(groupId).get();
-    console.log("[game.js] group doc exists =", doc.exists);
-
-    if (!doc.exists) {
-      groupInfoEl && (groupInfoEl.textContent = "グループが見つかりませんでした。");
-      return;
-    }
-
-    const data = doc.data() || {};
-    members = Array.isArray(data.members) ? data.members : [];
-    const groupName = data.name || "無題のイベント";
-    groupInfoEl &&
-      (groupInfoEl.textContent = `グループ：${groupName}（メンバー：${members.join("、")}）`);
-
-    // 進行中ゲーム用ドキュメント参照
-    liveGameDocRef = dbRef
-      .collection("groups")
-      .doc(groupId)
-      .collection("liveGame")
-      .doc("current");
-
-    // 進行中ゲームのリアルタイム購読
-    liveGameDocRef.onSnapshot((snapshot) => {
+  // 進行中ゲームのリアルタイム購読
+  function subscribeLiveGame() {
+    if (unsubscribeLiveGame) return;
+    unsubscribeLiveGame = liveGameDocRef.onSnapshot((snapshot) => {
+      console.log("[addgame.js] liveGame onSnapshot, snapshot.exists:", snapshot.exists);
       if (!snapshot.exists) {
-        // なければ作成
         resetLiveScores();
         return;
       }
       const snapData = snapshot.data() || {};
       const scoresFromDb = snapData.scores || {};
-
-      // メンバー分だけ取り出して反映
       members.forEach((m) => {
         const v = scoresFromDb[m];
         liveScores[m] = typeof v === "number" ? v : 0;
       });
-
       renderScoreTable();
     });
-
-    // 初回描画
-    members.forEach((m) => (liveScores[m] = 0));
-    renderScoreTable();
-  } catch (err) {
-    console.error("[game.js] グループ情報取得エラー", err);
-    groupInfoEl && (groupInfoEl.textContent = "グループ情報の取得に失敗しました。");
-    return;
   }
 
-  // ===== 過去のゲーム結果一覧（存在する場合だけ） =====
-  if (gamesListEl) {
-    dbRef
-      .collection("groups")
-      .doc(groupId)
-      .collection("games")
-      .orderBy("createdAt", "desc")
-      .onSnapshot((snap) => {
-        gamesListEl.innerHTML = "";
+  // ===== グループ情報の取得（リアルタイム購読に変更） =====
+  groupDocRef.onSnapshot(
+    (doc) => {
+      console.log("[addgame.js] group onSnapshot, exists =", doc.exists);
+      if (!doc.exists) {
+        groupInfoEl && (groupInfoEl.textContent = "グループが見つかりませんでした。");
+        return;
+      }
 
-        if (snap.empty) {
-          const p = document.createElement("p");
-          p.className = "helper";
-          p.textContent = "まだゲーム結果がありません。";
-          gamesListEl.appendChild(p);
-          return;
+      const data = doc.data() || {};
+      const nextMembers = Array.isArray(data.members) ? data.members : [];
+      members = nextMembers;
+      const groupName = data.name || "無題のイベント";
+      groupInfoEl &&
+        (groupInfoEl.textContent = `グループ：${groupName}（メンバー：${members.join("、")}）`);
+
+      // 新しいメンバーが追加されてもスコアに0で載るよう補完
+      members.forEach((m) => {
+        if (typeof liveScores[m] !== "number") {
+          liveScores[m] = 0;
         }
-
-        snap.forEach((doc) => {
-          const d = doc.data() || {};
-          const gameName = d.name || "名前なしゲーム";
-          const memo = d.memo || "";
-          const scores = d.scores || {};
-
-          let dateText = "日時未記録";
-          if (d.createdAt && d.createdAt.toDate) {
-            const t = d.createdAt.toDate();
-            const yyyy = t.getFullYear();
-            const mm = String(t.getMonth() + 1).padStart(2, "0");
-            const dd = String(t.getDate()).padStart(2, "0");
-            const hh = String(t.getHours()).padStart(2, "0");
-            const mi = String(t.getMinutes()).padStart(2, "0");
-            dateText = `${yyyy}/${mm}/${dd} ${hh}:${mi}`;
-          }
-
-          const card = document.createElement("div");
-          card.className = "game-card";
-
-          const header = document.createElement("div");
-          header.className = "game-card-header";
-
-          const titleEl = document.createElement("div");
-          titleEl.className = "game-card-title";
-          titleEl.textContent = gameName;
-
-          const dateEl = document.createElement("div");
-          dateEl.className = "game-card-date";
-          dateEl.textContent = dateText;
-
-          header.appendChild(titleEl);
-          header.appendChild(dateEl);
-          card.appendChild(header);
-
-          if (memo) {
-            const memoEl = document.createElement("div");
-            memoEl.className = "game-card-memo";
-            memoEl.textContent = memo;
-            card.appendChild(memoEl);
-          }
-
-          const table = document.createElement("table");
-          table.className = "game-card-table";
-
-          const thead = document.createElement("thead");
-          const trHead = document.createElement("tr");
-          const thMember = document.createElement("th");
-          thMember.textContent = "メンバー";
-          const thScore = document.createElement("th");
-          thScore.textContent = "ポイント";
-          trHead.appendChild(thMember);
-          trHead.appendChild(thScore);
-          thead.appendChild(trHead);
-          table.appendChild(thead);
-
-          const tbody = document.createElement("tbody");
-          const names = members.length > 0 ? members : Object.keys(scores);
-
-          names.forEach((name) => {
-            if (!(name in scores)) return;
-            const tr = document.createElement("tr");
-            const tdName = document.createElement("td");
-            const tdScore = document.createElement("td");
-            tdName.textContent = name;
-            tdScore.textContent = String(scores[name]);
-            tr.appendChild(tdName);
-            tr.appendChild(tdScore);
-            tbody.appendChild(tr);
-          });
-
-          table.appendChild(tbody);
-          card.appendChild(table);
-          gamesListEl.appendChild(card);
-        });
       });
-  }
+
+      renderScoreTable();
+      subscribeLiveGame();
+    },
+    (err) => {
+      console.error("[addgame.js] グループ情報購読エラー", err);
+      groupInfoEl && (groupInfoEl.textContent = "グループ情報の取得に失敗しました。");
+    }
+  );
 
   // ===== 「ゲーム結果を保存」ボタン =====
   saveGameBtn?.addEventListener("click", async () => {
@@ -358,18 +266,12 @@ document.addEventListener("DOMContentLoaded", async () => {
           createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         });
 
-      // ポップアップ無し：次の入力にすぐ移れるようにリセット
       if (gameNameInput) gameNameInput.value = "";
       if (gameMemoInput) gameMemoInput.value = "";
       resetLiveScores();
 
-      if (gameSuccessEl) {
-        gameSuccessEl.textContent = "保存しました（続けて次のゲームを入力できます）。";
-        // すぐ消したいなら↓をON
-        setTimeout(() => {
-          if (gameSuccessEl) gameSuccessEl.textContent = "";
-        }, 1500);
-      }
+      // 保存後はゲーム結果画面へ
+      window.location.href = `game.html?gid=${groupId}`;
     } catch (err) {
       console.error("[game.js] ゲーム結果保存エラー", err);
       if (gameErrorEl) gameErrorEl.textContent = "ゲーム結果の保存に失敗しました。";

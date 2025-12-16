@@ -3,7 +3,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const eventNameInput = document.getElementById("eventName");
 
-  // ★ 追加：メンバー関連の要素
   const memberNameInput = document.getElementById("memberName");
   const addMemberBtn = document.getElementById("addMemberBtn");
   const memberListEl = document.getElementById("memberList");
@@ -11,10 +10,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const createGroupBtn = document.getElementById("createGroupBtn");
   const errorMessage = document.getElementById("errorMessage");
 
-  // ★ 追加：メンバーを配列で管理
   const members = [];
 
-  // メンバー一覧の描画関数
   function renderMembers() {
     memberListEl.innerHTML = "";
 
@@ -33,10 +30,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ページ読み込み時に一度描画
   renderMembers();
 
-  // 「メンバー追加」ボタン
   addMemberBtn.addEventListener("click", () => {
     const name = memberNameInput.value.trim();
     errorMessage.textContent = "";
@@ -46,7 +41,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // 重複チェック（必要なければifごと消してOK）
     if (members.includes(name)) {
       errorMessage.textContent = "同じメンバーがすでに追加されています。";
       return;
@@ -57,7 +51,6 @@ document.addEventListener("DOMContentLoaded", () => {
     renderMembers();
   });
 
-  // Enterキーで追加できるようにする（お好みで）
   memberNameInput.addEventListener("keydown", e => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -65,7 +58,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 「グループ作成」ボタン
   createGroupBtn.addEventListener("click", async () => {
     errorMessage.textContent = "";
 
@@ -82,23 +74,47 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
-      // Firestore に groups ドキュメントを作成
-      const docRef = await db.collection("groups").add({
+      const docRef = await window.db.collection("groups").add({
         name,
         members,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      const groupId = docRef.id;
-      console.log("[index.js] グループ作成成功 groupId =", groupId);
-
-      // 今は挙動確認しやすいように alert
-      // 問題なければ group.html に飛ばす
-      window.location.href = `group.html?gid=${groupId}`;
+      window.location.href = `group.html?gid=${docRef.id}`;
     } catch (err) {
-      console.error("[index.js] グループ作成エラー", err);
+      console.error(err);
       errorMessage.textContent =
         "グループ作成に失敗しました。時間をおいて再度お試しください。";
     }
   });
+
+  // ===== ハンバーガーメニュー =====
+  const menuButton = document.getElementById("menuButton");
+  const sideMenu = document.getElementById("sideMenu");
+  const sideMenuOverlay = document.getElementById("sideMenuOverlay");
+  const closeMenuButton = document.getElementById("closeMenuButton");
+
+  const navToGroup = document.getElementById("navToGroup");
+  const navToGame = document.getElementById("navToGame");
+  const navToAbout = document.getElementById("navToAbout");
+  const navToContact = document.getElementById("navToContact");
+
+  function openMenu() {
+    sideMenu?.classList.add("open");
+  }
+
+  function closeMenu() {
+    sideMenu?.classList.remove("open");
+  }
+
+  menuButton?.addEventListener("click", openMenu);
+  closeMenuButton?.addEventListener("click", closeMenu);
+  sideMenuOverlay?.addEventListener("click", closeMenu);
+
+  navToGroup?.addEventListener("click", closeMenu);
+  navToGame?.addEventListener("click", closeMenu);
+  navToAbout?.addEventListener("click", () => {
+    window.location.href = "about.html";
+  });
+  // navToContact removed
 });

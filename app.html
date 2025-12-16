@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8" />
+  <title>割り勘アプリ - グループ作成</title>
+  <link rel="stylesheet" href="./css/style.css" />
+
+  <!-- Firebase SDK (compat版) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- Firebase設定 -->
+  <script src="js/firebase.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>割り勘グループを作成</h1>
+
+    <div class="form-group">
+      <label for="eventName">イベント名</label>
+      <input type="text" id="eventName" placeholder="例：沖縄旅行、忘年会" />
+    </div>
+
+    <div class="form-group">
+      <label for="memberName">メンバーを追加</label>
+
+      <div class="inline">
+        <input type="text" id="memberName" placeholder="例：たけし" />
+        <button type="button" id="addMemberBtn" class="secondary">
+          追加
+        </button>
+      </div>
+
+      <p class="helper">追加済みメンバー：</p>
+      <ul id="memberList" class="member-list"></ul>
+    </div>
+
+
+    <button id="createGroupBtn">グループを作成</button>
+
+    <p id="errorMessage" class="error"></p>
+  </div>
+
+  <script src="js/index.js"></script>
+</body>
+<footer>
+  <a href="about.html">サービス説明</a> | <a href="contact.html">お問い合わせ</a> | <a href="privacy.html">プライバシーポリシー</a>
+</footer>
+
+</html>

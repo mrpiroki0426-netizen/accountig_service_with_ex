@@ -28,3 +28,6 @@ firebase.initializeApp(firebaseConfig);
 
 // Firestoreインスタンスを共通で使えるように
 const db = firebase.firestore();
+
+// グローバルに公開
+window.db = db;

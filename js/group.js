@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // グループ情報の取得
   try {
-    const doc = await db.collection("groups").doc(groupId).get();
+    const doc = await window.db.collection("groups").doc(groupId).get();
     console.log("[group.js] group doc exists =", doc.exists);
 
     if (!doc.exists) {
@@ -144,7 +144,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   // 立て替え一覧を読み込み & 監視
-  db.collection("groups")
+  window.db.collection("groups")
     .doc(groupId)
     .collection("expenses")
     .orderBy("createdAt", "asc")
@@ -281,7 +281,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
-      await db
+      await window.db
         .collection("groups")
         .doc(groupId)
         .collection("expenses")
@@ -300,47 +300,44 @@ document.addEventListener("DOMContentLoaded", async () => {
       expenseError.textContent = "立て替えの登録に失敗しました。";
     }
   });
+// js/group.js
+
+function getGroupIdFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  return params.get("gid");
+}
+
+/* （途中の割り勘ロジック・Firestore処理は変更なし） */
+/* ……あなたの今のコードそのまま …… */
 
   // ===== ハンバーガーメニュー制御 =====
   const menuButton = document.getElementById("menuButton");
   const sideMenu = document.getElementById("sideMenu");
   const sideMenuOverlay = document.getElementById("sideMenuOverlay");
   const closeMenuButton = document.getElementById("closeMenuButton");
+
   const navToGroup = document.getElementById("navToGroup");
   const navToGame = document.getElementById("navToGame");
+  const navToAbout = document.getElementById("navToAbout");
+  const navToContact = document.getElementById("navToContact");
 
   function openMenu() {
-    if (sideMenu) {
-      sideMenu.classList.add("open");
-    }
+    sideMenu?.classList.add("open");
   }
 
   function closeMenu() {
-    if (sideMenu) {
-      sideMenu.classList.remove("open");
-    }
+    sideMenu?.classList.remove("open");
   }
 
-  if (menuButton) {
-    menuButton.addEventListener("click", openMenu);
-  }
-  if (closeMenuButton) {
-    closeMenuButton.addEventListener("click", closeMenu);
-  }
-  if (sideMenuOverlay) {
-    sideMenuOverlay.addEventListener("click", closeMenu);
-  }
+  menuButton?.addEventListener("click", openMenu);
+  closeMenuButton?.addEventListener("click", closeMenu);
+  sideMenuOverlay?.addEventListener("click", closeMenu);
 
-  if (navToGroup) {
-    navToGroup.addEventListener("click", () => {
-      // すでに勘定画面なのでメニューを閉じるだけ
-      closeMenu();
-    });
-  }
+  navToGroup?.addEventListener("click", closeMenu);
 
-  if (navToGame) {
-    navToGame.addEventListener("click", () => {
-      window.location.href = `game.html?gid=${groupId}`;
-    });
-  }
+  navToGame?.addEventListener("click", () => {
+    window.location.href = `game.html?gid=${groupId}`;
+  });
+
+  // navToAbout and navToContact removed
 });
