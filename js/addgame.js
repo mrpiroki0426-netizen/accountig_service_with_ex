@@ -178,29 +178,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!members || members.length === 0) {
       const tr = document.createElement("tr");
       const td = document.createElement("td");
-      td.colSpan = 3;
+      td.colSpan = 2;
       td.textContent = "メンバーが登録されていません。";
       tr.appendChild(td);
       scoresBody.appendChild(tr);
       return;
     }
 
-    // ヘッダーを描き直す（削除列を追加）
+    // ヘッダーを描き直す（2列：メンバー / ポイント）
     const thead = scoresBody.parentElement?.querySelector("thead");
-    if (thead && thead.dataset.withDelete !== "true") {
+    if (thead && thead.dataset.layout !== "member-score-v1") {
       thead.innerHTML = "";
       const trHead = document.createElement("tr");
       const thMember = document.createElement("th");
       thMember.textContent = "メンバー";
       const thScore = document.createElement("th");
       thScore.textContent = "ポイント";
-      const thDelete = document.createElement("th");
-      thDelete.textContent = "削除";
       trHead.appendChild(thMember);
       trHead.appendChild(thScore);
-      trHead.appendChild(thDelete);
       thead.appendChild(trHead);
-      thead.dataset.withDelete = "true";
+      thead.dataset.layout = "member-score-v1";
     }
 
     members.forEach((m) => {
