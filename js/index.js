@@ -17,6 +17,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const recentGroupsEmptyEl = document.getElementById("recentGroupsEmpty");
   const clearRecentGroupsBtn = document.getElementById("clearRecentGroupsBtn");
 
+  const shareModalEl = document.getElementById("shareModal");
+  const shareModalOverlayEl = document.getElementById("shareModalOverlay");
+  const shareModalCloseBtn = document.getElementById("shareModalCloseBtn");
+  const shareModalUrlEl = document.getElementById("shareModalUrl");
+  const shareModalMessageEl = document.getElementById("shareModalMessage");
+  const shareModalCopyBtn = document.getElementById("shareModalCopyBtn");
+  const shareModalOpenBtn = document.getElementById("shareModalOpenBtn");
+
   const members = [];
 
   function buildGroupUrl(groupId) {
@@ -80,6 +88,52 @@ document.addEventListener("DOMContentLoaded", () => {
     temp.select();
     document.execCommand("copy");
     document.body.removeChild(temp);
+  }
+
+  function openShareModal({ url, onOpen }) {
+    if (!shareModalEl || !shareModalUrlEl) return false;
+    shareModalEl.classList.add("open");
+    shareModalEl.setAttribute("aria-hidden", "false");
+    if (shareModalMessageEl) shareModalMessageEl.textContent = "";
+    shareModalUrlEl.value = url;
+
+    const close = () => {
+      shareModalEl.classList.remove("open");
+      shareModalEl.setAttribute("aria-hidden", "true");
+    };
+
+    const handleOverlay = () => close();
+    const handleClose = () => close();
+    const handleCopy = async () => {
+      if (!shareModalUrlEl) return;
+      if (shareModalMessageEl) shareModalMessageEl.textContent = "";
+      try {
+        await copyToClipboard(shareModalUrlEl.value);
+        if (shareModalMessageEl) shareModalMessageEl.textContent = "コピーしました。";
+      } catch (e) {
+        console.error("[index.js] copy failed", e);
+        if (shareModalMessageEl) shareModalMessageEl.textContent = "コピーに失敗しました。";
+      }
+    };
+    const handleOpen = () => {
+      close();
+      onOpen?.();
+    };
+
+    shareModalOverlayEl?.addEventListener("click", handleOverlay, { once: true });
+    shareModalCloseBtn?.addEventListener("click", handleClose, { once: true });
+    shareModalCopyBtn?.addEventListener("click", handleCopy);
+    shareModalOpenBtn?.addEventListener("click", handleOpen, { once: true });
+
+    // Escapeで閉じる（1回だけ）
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        close();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown, { once: true });
+
+    return true;
   }
 
   function formatRelativeTime(ms) {
@@ -229,7 +283,18 @@ document.addEventListener("DOMContentLoaded", () => {
       });
 
       upsertRecentGroup({ gid: docRef.id, name });
-      window.location.href = `group.html?gid=${docRef.id}`;
+
+      const groupUrl = buildGroupUrl(docRef.id);
+      const opened = openShareModal({
+        url: groupUrl,
+        onOpen: () => {
+          window.location.href = `group.html?gid=${docRef.id}`;
+        }
+      });
+
+      if (!opened) {
+        window.location.href = `group.html?gid=${docRef.id}`;
+      }
     } catch (err) {
       console.error(err);
       errorMessage.textContent =

@@ -4,6 +4,8 @@
   <meta charset="UTF-8" />
   <title>yamican - ゲームのポイント記録</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="img/yamican_favicon.png?v=2" type="image/png" sizes="512x512" />
+  <link rel="apple-touch-icon" href="img/yamican_favicon.png?v=2" />
   <link rel="stylesheet" href="css/style.css" />
 
   <!-- Firebase SDK -->
@@ -21,7 +23,7 @@
           &#9776;
         </button>
         <a class="brand" href="index.html" aria-label="yamican トップへ">
-          <span class="brand-mark">ya</span><span class="brand-text">mican</span>
+          <img class="brand-logo" src="img/yamican_logo.png" alt="yamican" />
         </a>
       </div>
 
@@ -45,6 +47,7 @@
       <li><button id="navToGroup"   class="side-menu-item">勘定を追加</button></li>
       <li><button id="navToGame"    class="side-menu-item">ゲーム記録を追加</button></li>
       <li><button id="navToSettle"  class="side-menu-item">精算を確認</button></li>
+      <li><button id="navToManage" class="side-menu-item">グループの管理</button></li>
     </ul>
 
     </div>
@@ -71,18 +74,18 @@
       <input type="text" id="gameName" placeholder="例：大富豪1回目" />
     </div>
 
-    <h2>メンバーごとのポイント</h2>
-    <table id="scoresTable">
-      <thead>
-        <tr>
-          <th>メンバー</th>
-          <th>ポイント</th>
-        </tr>
-      </thead>
-      <tbody id="scoresBody"></tbody>
-    </table>
+    <h2>ラウンド</h2>
+    <div class="round-controls" aria-label="ラウンド操作">
+      <p class="helper">ラウンドごとにポイントを入力します（表は下に追加されます）。</p>
+      <div class="round-actions">
+        <button type="button" id="addRoundBtn" class="secondary">ラウンド追加</button>
+      </div>
+    </div>
+
+    <div id="roundsContainer" class="rounds-container" aria-label="ラウンド一覧"></div>
 
     <button id="saveGameBtn">ゲーム結果を保存</button>
+    <p id="totalScoresInfo" class="helper"></p>
     <p id="gameError" class="error"></p>
       <p id="gameSuccess" class="helper"></p>
     </div>

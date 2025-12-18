@@ -61,16 +61,9 @@ function signedSqrt(value) {
   return Math.sign(v) * Math.sqrt(Math.abs(v));
 }
 
-function normalizeMeanOne(map, members) {
-  const values = members.map((m) => map[m]).filter((v) => typeof v === "number" && Number.isFinite(v));
-  const mean = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 1;
-  if (!mean || !Number.isFinite(mean)) return map;
-  const out = {};
-  members.forEach((m) => {
-    const v = map[m];
-    out[m] = typeof v === "number" && Number.isFinite(v) ? v / mean : 1;
-  });
-  return out;
+function normalizeMeanOne(map) {
+  // NOTE: 以前は平均=1に正規化していたが、要望により廃止（互換のため関数は残す）
+  return map;
 }
 
 function computeNextPaymentWeights({ members, scores, currentWeights }) {
@@ -83,15 +76,10 @@ function computeNextPaymentWeights({ members, scores, currentWeights }) {
     rawFactors[m] = Math.exp(PAYMENT_WEIGHTS_ALPHA * centered);
   });
 
-  const factorsMean = members.length > 0
-    ? members.reduce((sum, m) => sum + (rawFactors[m] || 1), 0) / members.length
-    : 1;
-
   const normalizedFactors = {};
   members.forEach((m) => {
     const base = rawFactors[m] || 1;
-    const normalized = factorsMean ? base / factorsMean : 1;
-    normalizedFactors[m] = clamp(normalized, PAYMENT_FACTOR_MIN, PAYMENT_FACTOR_MAX);
+    normalizedFactors[m] = clamp(base, PAYMENT_FACTOR_MIN, PAYMENT_FACTOR_MAX);
   });
 
   const nextWeightsRaw = {};
@@ -102,14 +90,36 @@ function computeNextPaymentWeights({ members, scores, currentWeights }) {
     nextWeightsRaw[m] = current * normalizedFactors[m];
   });
 
-  const nextWeightsNormalized = normalizeMeanOne(nextWeightsRaw, members);
-
   const nextWeights = {};
   members.forEach((m) => {
-    nextWeights[m] = clamp(nextWeightsNormalized[m] ?? 1, PAYMENT_WEIGHT_MIN, PAYMENT_WEIGHT_MAX);
+    nextWeights[m] = clamp(nextWeightsRaw[m] ?? 1, PAYMENT_WEIGHT_MIN, PAYMENT_WEIGHT_MAX);
   });
 
   return { factors: normalizedFactors, nextWeights };
+}
+
+function computeTotalsFromRounds({ members, rounds }) {
+  const totals = {};
+  members.forEach((m) => (totals[m] = 0));
+  if (!Array.isArray(rounds)) return totals;
+  rounds.forEach((r) => {
+    const scores = r?.scores || {};
+    members.forEach((m) => {
+      const v = scores[m];
+      totals[m] += typeof v === "number" && Number.isFinite(v) ? v : 0;
+    });
+  });
+  return totals;
+}
+
+function getGameScoresForMembers({ gameData, members }) {
+  if (gameData && gameData.totalScores && typeof gameData.totalScores === "object") {
+    return gameData.totalScores;
+  }
+  if (Array.isArray(gameData?.rounds) && gameData.rounds.length > 0) {
+    return computeTotalsFromRounds({ members, rounds: gameData.rounds });
+  }
+  return gameData?.scores || {};
 }
 
 // URLパラメータから gid を取得
@@ -148,9 +158,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   let groupName = "無題のイベント";
 
   function renderPaymentWeights({ paymentWeights, sourceLabel }) {
-    const weights = paymentWeights || {};
-    const normalized = normalizeMeanOne(weights, members);
-
     if (ratingsBody) {
       ratingsBody.innerHTML = "";
       members.forEach((m) => {
@@ -158,7 +165,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const tdName = document.createElement("td");
         const tdRate = document.createElement("td");
         tdName.textContent = m;
-        const v = typeof normalized[m] === "number" && Number.isFinite(normalized[m]) ? normalized[m] : 1;
+        const v = typeof paymentWeights?.[m] === "number" && Number.isFinite(paymentWeights[m]) ? paymentWeights[m] : 1;
         tdRate.textContent = v.toFixed(2);
         tr.appendChild(tdName);
         tr.appendChild(tdRate);
@@ -167,7 +174,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (ratingInfo) {
-      ratingInfo.textContent = `平均=1（${sourceLabel}）`;
+      ratingInfo.textContent = sourceLabel;
     }
   }
 
@@ -235,7 +242,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const d = gameDoc.data() || {};
         const gameName = d.name || "名前なしゲーム";
         const memo = d.memo || "";
-        const scores = d.scores || {};
+        const scores = getGameScoresForMembers({ gameData: d, members });
         const storedRatingFactors = d.ratingFactors || {};
         const computedRatingFactors = !d.ratingConfirmed
           ? computeNextPaymentWeights({
@@ -365,13 +372,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         const names = members.length > 0 ? members : Object.keys(scores);
 
         names.forEach((name) => {
-          if (!(name in scores)) return;
           const tr = document.createElement("tr");
           const tdName = document.createElement("td");
           const tdScore = document.createElement("td");
           const tdFactor = document.createElement("td");
           tdName.textContent = name;
-          tdScore.textContent = String(scores[name]);
+          const scoreValue = scores[name];
+          tdScore.textContent =
+            typeof scoreValue === "number" && Number.isFinite(scoreValue) ? String(scoreValue) : "0";
 
           const factorValue = d.ratingConfirmed
             ? storedRatingFactors?.[name]
@@ -405,6 +413,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const navToGroup = document.getElementById("navToGroup");
   const navToGame = document.getElementById("navToGame");
   const navToSettle = document.getElementById("navToSettle");
+  const navToManage = document.getElementById("navToManage");
 
   function openMenu() {
     sideMenu?.classList.add("open");
@@ -428,6 +437,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = `settlement.html?gid=${groupId}`;
   });
 
+  navToManage?.addEventListener("click", () => {
+    window.location.href = `manage.html?gid=${groupId}`;
+  });
+
   // ===== 結果確定処理 =====
   async function confirmGameResult(docId) {
     const groupRef = dbRef.collection("groups").doc(groupId);
@@ -447,11 +460,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const groupData = groupSnap.data() || {};
       const currentWeights = groupData.paymentWeights || {};
-      const scoreMap = gameData.scores || {};
-
       const memberList = Array.isArray(groupData.members) && groupData.members.length > 0
         ? groupData.members
-        : Object.keys(scoreMap);
+        : Object.keys(gameData.scores || {});
+
+      const scoreMap = getGameScoresForMembers({ gameData, members: memberList });
 
       const { factors, nextWeights } = computeNextPaymentWeights({
         members: memberList,

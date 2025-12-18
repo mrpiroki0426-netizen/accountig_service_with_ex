@@ -125,22 +125,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const amountInput = document.getElementById("amount");
   const addExpenseBtn = document.getElementById("addExpenseBtn");
 
-  // 共有URL関連
-  const shareUrlInput = document.getElementById("shareUrl");
-  const copyShareUrlBtn = document.getElementById("copyShareUrlBtn");
-  const shareUrlMessage = document.getElementById("shareUrlMessage");
-
-  // 今開いているURLそのものを共有URLとして使う
-  const shareUrl = window.location.href;
-  if (shareUrlInput) {
-    shareUrlInput.value = shareUrl;
-  }
-
-  // navigator.share が使える環境ではボタンのラベルを変更（任意）
-  if (navigator.share && copyShareUrlBtn) {
-    copyShareUrlBtn.textContent = "共有する";
-  }
-
   let members = [];
   let expenses = [];
 
@@ -258,44 +242,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  // 共有URLコピー or 共有シート
-  copyShareUrlBtn.addEventListener("click", async () => {
-    shareUrlMessage.textContent = "";
-
-    const url = shareUrlInput.value;
-    const shareData = {
-      title: groupNameEl.textContent || "割り勘グループ",
-      text: "この割り勘グループを共有します。",
-      url
-    };
-
-    // Web Share API が使える（主にスマホ）の場合
-    if (navigator.share) {
-      try {
-        await navigator.share(shareData);
-        shareUrlMessage.textContent = "共有シートを開きました。";
-        return;
-      } catch (err) {
-        console.warn("navigator.share でキャンセルまたはエラー", err);
-      }
-    }
-
-    // フォールバック：URLコピー
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText(url);
-      } else {
-        shareUrlInput.select();
-        document.execCommand("copy");
-      }
-      shareUrlMessage.textContent = "共有URLをコピーしました。";
-    } catch (err) {
-      console.error("URLコピー失敗", err);
-      shareUrlMessage.textContent =
-        "コピーに失敗しました。手動で選択してコピーしてください。";
-    }
-  });
-
   // 立て替え追加
   addExpenseBtn.addEventListener("click", async () => {
     expenseError.textContent = "";
@@ -367,6 +313,7 @@ function getGroupIdFromQuery() {
   const navToAbout = document.getElementById("navToAbout");
   const navToContact = document.getElementById("navToContact");
   const navToSettle = document.getElementById("navToSettle");
+  const navToManage = document.getElementById("navToManage");
 
   function openMenu() {
     sideMenu?.classList.add("open");
@@ -388,6 +335,10 @@ function getGroupIdFromQuery() {
 
   navToSettle?.addEventListener("click", () => {
     window.location.href = `settlement.html?gid=${groupId}`;
+  });
+
+  navToManage?.addEventListener("click", () => {
+    window.location.href = `manage.html?gid=${groupId}`;
   });
 
   // navToAbout and navToContact removed

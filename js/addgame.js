@@ -13,11 +13,11 @@ function loadRecentGroups() {
     if (!Array.isArray(parsed)) return [];
 
     return parsed
-      .filter(item => item && typeof item.gid === "string" && item.gid.trim().length > 0)
-      .map(item => ({
+      .filter((item) => item && typeof item.gid === "string" && item.gid.trim().length > 0)
+      .map((item) => ({
         gid: item.gid,
         name: typeof item.name === "string" ? item.name : "グループ",
-        lastUsedAt: typeof item.lastUsedAt === "number" ? item.lastUsedAt : 0
+        lastUsedAt: typeof item.lastUsedAt === "number" ? item.lastUsedAt : 0,
       }))
       .sort((a, b) => b.lastUsedAt - a.lastUsedAt)
       .slice(0, MAX_RECENT_GROUPS);
@@ -36,10 +36,8 @@ function upsertRecentGroup({ gid, name }) {
   const normalizedName = (name || "").trim() || "グループ";
 
   const current = loadRecentGroups();
-  const next = [
-    { gid, name: normalizedName, lastUsedAt: now },
-    ...current.filter(item => item.gid !== gid)
-  ].slice(0, MAX_RECENT_GROUPS);
+  const next = [{ gid, name: normalizedName, lastUsedAt: now }, ...current.filter((i) => i.gid !== gid)]
+    .slice(0, MAX_RECENT_GROUPS);
 
   saveRecentGroups(next);
 }
@@ -50,10 +48,42 @@ function getGroupIdFromQuery() {
   return params.get("gid");
 }
 
-// URLパラメータから gameId を取得（編集時に使用）
+// URLパラメータから gameId を取得（編集モードに使用）
 function getGameIdFromQuery() {
   const params = new URLSearchParams(window.location.search);
   return params.get("gameId");
+}
+
+function toFiniteNumber(value, fallback = 0) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
+function buildStableMemberOrder({ groupMembers, scoreMembers, removedMembers }) {
+  const removed = removedMembers || new Set();
+  const fromScores = Array.isArray(scoreMembers) ? scoreMembers : [];
+  const fromGroup = Array.isArray(groupMembers) ? groupMembers : [];
+
+  const scoreSet = new Set(fromScores.filter((m) => typeof m === "string"));
+  const ordered = [];
+
+  // まずはグループに登録されている順を優先
+  fromGroup.forEach((m) => {
+    if (typeof m !== "string") return;
+    if (removed.has(m)) return;
+    if (!scoreSet.has(m) && fromScores.length > 0) return;
+    ordered.push(m);
+  });
+
+  // グループ外メンバー（古いゲームなど）を末尾に追加
+  fromScores.forEach((m) => {
+    if (typeof m !== "string") return;
+    if (removed.has(m)) return;
+    if (ordered.includes(m)) return;
+    ordered.push(m);
+  });
+
+  return ordered;
 }
 
 // デフォルトのゲーム名を生成（YYYY/MM/DD HH:mm ゲーム）
@@ -67,6 +97,14 @@ function buildDefaultGameName() {
   return `${yyyy}/${mm}/${dd} ${hh}:${mi} ゲーム`;
 }
 
+function createEmptyRound(members) {
+  const scores = {};
+  (members || []).forEach((m) => {
+    scores[m] = 0;
+  });
+  return { scores };
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   const groupId = getGroupIdFromQuery();
   const gameId = getGameIdFromQuery();
@@ -75,9 +113,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   console.log("[addgame.js] gameId =", gameId, "isEditMode:", isEditMode);
 
   // Firestore参照（firebase.js が db または window.db を作っている前提）
-  const dbRef =
-    (typeof window !== "undefined" && window.db) ||
-    (typeof db !== "undefined" ? db : null);
+  const dbRef = (typeof window !== "undefined" && window.db) || (typeof db !== "undefined" ? db : null);
 
   if (!dbRef) {
     alert("Firestore(db) が見つかりません。js/firebase.js の読み込み順を確認してください。");
@@ -91,16 +127,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // DOM
   const groupInfoEl = document.getElementById("groupInfo");
-  const scoresBody = document.getElementById("scoresBody");
   const gameNameInput = document.getElementById("gameName");
   const gameMemoInput = document.getElementById("gameMemo"); // 無いページもあるので後でnullチェック
   const saveGameBtn = document.getElementById("saveGameBtn");
   const gameErrorEl = document.getElementById("gameError");
   const gameSuccessEl = document.getElementById("gameSuccess");
-  const gamesListEl = document.getElementById("gamesList"); // 無いページもある
   const shareUrlInput = document.getElementById("shareUrl");
   const copyShareUrlBtn = document.getElementById("copyShareUrlBtn");
   const shareUrlMessage = document.getElementById("shareUrlMessage");
+  const addRoundBtn = document.getElementById("addRoundBtn");
+  const roundsContainerEl = document.getElementById("roundsContainer");
+  const totalScoresInfoEl = document.getElementById("totalScoresInfo");
 
   // サイドメニュー（存在する場合だけ使う）
   const menuButton = document.getElementById("menuButton");
@@ -110,6 +147,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const navToGroup = document.getElementById("navToGroup");
   const navToGame = document.getElementById("navToGame");
   const navToSettle = document.getElementById("navToSettle");
+  const navToManage = document.getElementById("navToManage");
 
   function openMenu() {
     sideMenu?.classList.add("open");
@@ -131,6 +169,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   navToSettle?.addEventListener("click", () => {
     window.location.href = `settlement.html?gid=${groupId}`;
   });
+  navToManage?.addEventListener("click", () => {
+    window.location.href = `manage.html?gid=${groupId}`;
+  });
 
   // データ保持
   let members = [];
@@ -138,22 +179,105 @@ document.addEventListener("DOMContentLoaded", async () => {
   let groupMembers = [];
   let currentGameCreatedAt = null;
   const removedMembers = new Set();
-  let liveScores = {}; // 進行中ゲームのスコア
+  let rounds = []; // [{ scores: {member:number} }]
+
   const groupDocRef = dbRef.collection("groups").doc(groupId);
   const liveGameDocRef = groupDocRef.collection("liveGame").doc("current");
-  const gameDocRef = isEditMode
-    ? groupDocRef.collection("games").doc(gameId)
-    : null;
+  const gameDocRef = isEditMode ? groupDocRef.collection("games").doc(gameId) : null;
   const scoreTargetRef = isEditMode ? gameDocRef : liveGameDocRef;
+
   let unsubscribeLiveGame = null;
   let unsubscribeGameDoc = null;
+
   function applyLockState() {
     const disabled = isLocked;
-    [gameNameInput, gameMemoInput, saveGameBtn].forEach((el) => {
+    [gameNameInput, gameMemoInput, saveGameBtn, addRoundBtn].forEach((el) => {
       if (el) el.disabled = disabled;
     });
     if (gameErrorEl) {
       gameErrorEl.textContent = disabled ? "結果確定済みのため編集できません。" : "";
+    }
+  }
+
+  function ensureRoundsInitialized() {
+    if (!Array.isArray(rounds) || rounds.length === 0) {
+      rounds = [createEmptyRound(members)];
+    }
+    rounds = rounds.map((r) => ({ scores: { ...(r?.scores || {}) } }));
+  }
+
+  function syncRoundsWithMembers() {
+    ensureRoundsInitialized();
+
+    const memberSet = new Set(members);
+    rounds = rounds.map((r) => {
+      const scores = { ...(r.scores || {}) };
+
+      // 追加されたメンバーは 0 で補完
+      members.forEach((m) => {
+        if (removedMembers.has(m)) return;
+        scores[m] = toFiniteNumber(scores[m], 0);
+      });
+
+      // 対象外メンバーは削除
+      Object.keys(scores).forEach((m) => {
+        if (!memberSet.has(m) || removedMembers.has(m)) {
+          delete scores[m];
+        }
+      });
+
+      return { ...r, scores };
+    });
+  }
+
+  function computeTotalScores() {
+    const totals = {};
+    members.forEach((m) => (totals[m] = 0));
+    rounds.forEach((r) => {
+      const s = r?.scores || {};
+      members.forEach((m) => {
+        totals[m] += toFiniteNumber(s[m], 0);
+      });
+    });
+    return totals;
+  }
+
+  function renderTotals() {
+    if (!totalScoresInfoEl) return;
+    if (!members || members.length === 0) {
+      totalScoresInfoEl.textContent = "";
+      return;
+    }
+    const totals = computeTotalScores();
+    const parts = members.map((m) => `${m}: ${totals[m]}`);
+    totalScoresInfoEl.textContent = `合計ポイント（全ラウンド）: ${parts.join(" / ")}`;
+  }
+
+  let pushTimer = null;
+  function schedulePushLiveState() {
+    if (!scoreTargetRef) return;
+    if (pushTimer) window.clearTimeout(pushTimer);
+    pushTimer = window.setTimeout(() => {
+      pushLiveStateToFirestore();
+    }, 150);
+  }
+
+  async function pushLiveStateToFirestore() {
+    if (!scoreTargetRef) return;
+    syncRoundsWithMembers();
+    try {
+      const totals = computeTotalScores();
+      const payload = {
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        rounds,
+        // 互換: 旧実装向けフィールド（切替UIは廃止）
+        currentRoundIndex: 0,
+        totalScores: totals,
+        scores: totals,
+      };
+      await scoreTargetRef.set(payload, { merge: true });
+    } catch (err) {
+      console.error("[addgame.js] live スコア更新エラー", err);
     }
   }
 
@@ -163,32 +287,100 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!ok) return;
     removedMembers.add(name);
     members = members.filter((m) => m !== name);
-    delete liveScores[name];
-    renderScoreTable();
-    pushLiveScoresToFirestore();
+    rounds = rounds.map((r) => {
+      const nextScores = { ...(r.scores || {}) };
+      delete nextScores[name];
+      return { ...r, scores: nextScores };
+    });
+    renderRounds();
+    schedulePushLiveState();
   }
 
-  // ===== スコアテーブル描画（±ボタン付き） =====
-  function renderScoreTable() {
-    console.log("[addgame.js] renderScoreTable called, members:", members, "liveScores:", liveScores);
-    if (!scoresBody) return;
+  function setRoundScore(roundIndex, member, value) {
+    if (isLocked) return;
+    ensureRoundsInitialized();
+    if (!rounds[roundIndex]) return;
+    rounds[roundIndex].scores = { ...(rounds[roundIndex].scores || {}) };
+    rounds[roundIndex].scores[member] = toFiniteNumber(value, 0);
+    renderTotals();
+    schedulePushLiveState();
+  }
 
-    scoresBody.innerHTML = "";
+  function changeRoundScore(roundIndex, member, delta) {
+    if (isLocked) return;
+    ensureRoundsInitialized();
+    if (!rounds[roundIndex]) return;
+    const current = toFiniteNumber(rounds[roundIndex]?.scores?.[member], 0);
+    setRoundScore(roundIndex, member, current + delta);
+  }
+
+  function deleteRound(roundIndex) {
+    if (isLocked) return;
+    ensureRoundsInitialized();
+    if (rounds.length <= 1) return;
+    if (roundIndex < 0 || roundIndex >= rounds.length) return;
+    const ok = window.confirm(`第${roundIndex + 1}ラウンドを削除しますか？`);
+    if (!ok) return;
+    rounds.splice(roundIndex, 1);
+    syncRoundsWithMembers();
+    renderRounds();
+    schedulePushLiveState();
+  }
+
+  function addRound() {
+    if (isLocked) return;
+    ensureRoundsInitialized();
+    rounds.push(createEmptyRound(members));
+    renderRounds();
+    schedulePushLiveState();
+  }
+
+  addRoundBtn?.addEventListener("click", addRound);
+
+  function renderRounds() {
+    if (!roundsContainerEl) return;
+    syncRoundsWithMembers();
+    roundsContainerEl.innerHTML = "";
 
     if (!members || members.length === 0) {
-      const tr = document.createElement("tr");
-      const td = document.createElement("td");
-      td.colSpan = 2;
-      td.textContent = "メンバーが登録されていません。";
-      tr.appendChild(td);
-      scoresBody.appendChild(tr);
+      const empty = document.createElement("p");
+      empty.className = "helper";
+      empty.textContent = "メンバーが登録されていません。";
+      roundsContainerEl.appendChild(empty);
+      renderTotals();
       return;
     }
 
-    // ヘッダーを描き直す（2列：メンバー / ポイント）
-    const thead = scoresBody.parentElement?.querySelector("thead");
-    if (thead && thead.dataset.layout !== "member-score-v1") {
-      thead.innerHTML = "";
+    rounds.forEach((round, roundIndex) => {
+      const card = document.createElement("section");
+      card.className = "round-card";
+
+      const header = document.createElement("div");
+      header.className = "round-card-header";
+
+      const title = document.createElement("div");
+      title.className = "round-card-title";
+      title.textContent = `第${roundIndex + 1}ラウンド`;
+
+      const actions = document.createElement("div");
+      actions.className = "round-card-actions";
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "secondary";
+      deleteBtn.textContent = "ラウンド削除";
+      deleteBtn.disabled = isLocked || rounds.length <= 1;
+      deleteBtn.addEventListener("click", () => deleteRound(roundIndex));
+      actions.appendChild(deleteBtn);
+
+      header.appendChild(title);
+      header.appendChild(actions);
+      card.appendChild(header);
+
+      const table = document.createElement("table");
+      table.className = "round-table";
+
+      const thead = document.createElement("thead");
       const trHead = document.createElement("tr");
       const thMember = document.createElement("th");
       thMember.textContent = "メンバー";
@@ -197,140 +389,104 @@ document.addEventListener("DOMContentLoaded", async () => {
       trHead.appendChild(thMember);
       trHead.appendChild(thScore);
       thead.appendChild(trHead);
-      thead.dataset.layout = "member-score-v1";
-    }
 
-    members.forEach((m) => {
-      const score = typeof liveScores[m] === "number" ? liveScores[m] : 0;
+      const tbody = document.createElement("tbody");
+      members.forEach((m) => {
+        const score = toFiniteNumber(round?.scores?.[m], 0);
 
-      const tr = document.createElement("tr");
+        const tr = document.createElement("tr");
 
-      const tdName = document.createElement("td");
-      const nameWrap = document.createElement("div");
-      nameWrap.style.display = "flex";
-      nameWrap.style.alignItems = "center";
-      nameWrap.style.gap = "8px";
+        const tdName = document.createElement("td");
+        const nameWrap = document.createElement("div");
+        nameWrap.className = "round-member";
 
-      const nameSpan = document.createElement("span");
-      nameSpan.textContent = m;
+        const nameSpan = document.createElement("span");
+        nameSpan.textContent = m;
 
-      const delBtnInline = document.createElement("button");
-      delBtnInline.type = "button";
-      delBtnInline.textContent = "－";
-      delBtnInline.className = "score-btn score-btn-minus";
-      delBtnInline.style.backgroundColor = "#e11d48"; // red
-      delBtnInline.style.borderColor = "#e11d48";
-      delBtnInline.style.color = "#fff";
-      delBtnInline.disabled = isLocked;
-      delBtnInline.addEventListener("click", () => removeMember(m));
+        const delMemberBtn = document.createElement("button");
+        delMemberBtn.type = "button";
+        delMemberBtn.className = "score-btn score-btn-minus score-btn-remove-member";
+        delMemberBtn.textContent = "－";
+        delMemberBtn.disabled = isLocked;
+        delMemberBtn.addEventListener("click", () => removeMember(m));
 
-      nameWrap.appendChild(nameSpan);
-      nameWrap.appendChild(delBtnInline);
-      tdName.appendChild(nameWrap);
+        nameWrap.appendChild(nameSpan);
+        nameWrap.appendChild(delMemberBtn);
+        tdName.appendChild(nameWrap);
 
-      const tdScore = document.createElement("td");
+        const tdScore = document.createElement("td");
 
-      // コントロール
-      const controls = document.createElement("div");
-      controls.className = "score-controls";
+        const controls = document.createElement("div");
+        controls.className = "score-controls";
 
-      const minusBtn = document.createElement("button");
-      minusBtn.type = "button";
-      minusBtn.textContent = "−";
-      minusBtn.className = "score-btn score-btn-minus";
-      minusBtn.disabled = isLocked;
+        const minusBtn = document.createElement("button");
+        minusBtn.type = "button";
+        minusBtn.className = "score-btn score-btn-minus";
+        minusBtn.textContent = "－";
+        minusBtn.disabled = isLocked;
 
-      const input = document.createElement("input");
-      input.type = "number";
-      input.className = "score-input";
-      input.value = String(score);
-      input.setAttribute("data-member", m);
-      input.disabled = isLocked;
+        const input = document.createElement("input");
+        input.type = "number";
+        input.className = "score-input";
+        input.value = String(score);
+        input.disabled = isLocked;
 
-      const plusBtn = document.createElement("button");
-      plusBtn.type = "button";
-      plusBtn.textContent = "+";
-      plusBtn.className = "score-btn score-btn-plus";
-      plusBtn.disabled = isLocked;
+        const plusBtn = document.createElement("button");
+        plusBtn.type = "button";
+        plusBtn.className = "score-btn score-btn-plus";
+        plusBtn.textContent = "+";
+        plusBtn.disabled = isLocked;
 
-      minusBtn.addEventListener("click", () => changeScore(m, -1));
-      plusBtn.addEventListener("click", () => changeScore(m, +1));
+        minusBtn.addEventListener("click", () => changeRoundScore(roundIndex, m, -1));
+        plusBtn.addEventListener("click", () => changeRoundScore(roundIndex, m, +1));
 
-      input.addEventListener("change", () => {
-        const v = Number(input.value);
-        const val = Number.isFinite(v) ? v : 0;
-        setScore(m, val);
+        input.addEventListener("change", () => {
+          setRoundScore(roundIndex, m, input.value);
+        });
+
+        controls.appendChild(minusBtn);
+        controls.appendChild(input);
+        controls.appendChild(plusBtn);
+        tdScore.appendChild(controls);
+
+        tr.appendChild(tdName);
+        tr.appendChild(tdScore);
+        tbody.appendChild(tr);
       });
 
-      controls.appendChild(minusBtn);
-      controls.appendChild(input);
-      controls.appendChild(plusBtn);
-
-      tdScore.appendChild(controls);
-      tr.appendChild(tdName);
-      tr.appendChild(tdScore);
-
-      scoresBody.appendChild(tr);
+      table.appendChild(thead);
+      table.appendChild(tbody);
+      card.appendChild(table);
+      roundsContainerEl.appendChild(card);
     });
-  }
 
-  // ===== Firestoreに liveScores を反映 =====
-  async function pushLiveScoresToFirestore() {
-    if (!scoreTargetRef) return;
-    try {
-      // 編集モードでは createdAt や name/memo を壊さないよう merge:true
-      const mergeOption = isEditMode ? { merge: true } : { merge: true };
-      await scoreTargetRef.set(
-        {
-          scores: liveScores,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        },
-        mergeOption
-      );
-    } catch (err) {
-      console.error("[game.js] live スコア更新エラー", err);
-    }
-  }
-
-  function setScore(member, value) {
-    if (isLocked) return;
-    liveScores[member] = value;
-    renderScoreTable();
-    pushLiveScoresToFirestore();
-  }
-
-  function changeScore(member, delta) {
-    if (isLocked) return;
-    const current = typeof liveScores[member] === "number" ? liveScores[member] : 0;
-    liveScores[member] = current + delta;
-    renderScoreTable();
-    pushLiveScoresToFirestore();
+    renderTotals();
   }
 
   function resetLiveScores() {
-    console.log("[addgame.js] resetLiveScores called");
-    liveScores = {};
-    members.forEach((m) => (liveScores[m] = 0));
-    renderScoreTable();
-    pushLiveScoresToFirestore();
+    rounds = [createEmptyRound(members)];
+    renderRounds();
+    schedulePushLiveState();
   }
 
   // 進行中ゲームのリアルタイム購読（新規作成時のみ）
   function subscribeLiveGame() {
     if (unsubscribeLiveGame || isEditMode) return;
     unsubscribeLiveGame = liveGameDocRef.onSnapshot((snapshot) => {
-      console.log("[addgame.js] liveGame onSnapshot, snapshot.exists:", snapshot.exists);
       if (!snapshot.exists) {
         resetLiveScores();
         return;
       }
       const snapData = snapshot.data() || {};
-      const scoresFromDb = snapData.scores || {};
-      members.forEach((m) => {
-        const v = scoresFromDb[m];
-        liveScores[m] = typeof v === "number" ? v : 0;
-      });
-      renderScoreTable();
+
+      if (Array.isArray(snapData.rounds) && snapData.rounds.length > 0) {
+        rounds = snapData.rounds.map((r) => ({ scores: { ...(r?.scores || {}) } }));
+      } else {
+        // 互換: 旧形式（scoresのみ）
+        const scoresFromDb = snapData.scores || {};
+        rounds = [{ scores: { ...scoresFromDb } }];
+      }
+      renderRounds();
     });
   }
 
@@ -338,39 +494,42 @@ document.addEventListener("DOMContentLoaded", async () => {
   function subscribeGameDoc() {
     if (!isEditMode || unsubscribeGameDoc) return;
     unsubscribeGameDoc = gameDocRef.onSnapshot((snapshot) => {
-      console.log("[addgame.js] gameDoc onSnapshot, snapshot.exists:", snapshot.exists);
       if (!snapshot.exists) {
         gameErrorEl && (gameErrorEl.textContent = "対象のゲームが見つかりません。");
         return;
       }
       const data = snapshot.data() || {};
+
       isLocked = Boolean(data.ratingConfirmed);
       currentGameCreatedAt = data.createdAt || null;
-      const scoresFromDb = data.scores || {};
-      // 編集対象ゲームに記録されているメンバーを優先
-      let nextMembers = Object.keys(scoresFromDb);
-      if (nextMembers.length === 0) {
-        nextMembers = groupMembers;
-      }
-      nextMembers = nextMembers.filter((m) => !removedMembers.has(m));
-      members = nextMembers;
 
-      liveScores = {};
-      members.forEach((m) => {
-        const v = scoresFromDb[m];
-        liveScores[m] = typeof v === "number" ? v : 0;
+      const scoresFromDb = data.scores || {};
+      let scoreMembers = Object.keys(scoresFromDb);
+      if (scoreMembers.length === 0) {
+        scoreMembers = groupMembers;
+      }
+      members = buildStableMemberOrder({
+        groupMembers,
+        scoreMembers,
+        removedMembers,
       });
+
+      if (Array.isArray(data.rounds) && data.rounds.length > 0) {
+        rounds = data.rounds.map((r) => ({ scores: { ...(r?.scores || {}) } }));
+      } else {
+        rounds = [{ scores: { ...scoresFromDb } }];
+      }
+
       if (gameNameInput) gameNameInput.value = data.name || "";
       if (gameMemoInput) gameMemoInput.value = data.memo || "";
       applyLockState();
-      renderScoreTable();
+      renderRounds();
     });
   }
 
-  // ===== グループ情報の取得（リアルタイム購読に変更） =====
+  // ===== グループ情報の取得（リアルタイム購読） =====
   groupDocRef.onSnapshot(
     (doc) => {
-      console.log("[addgame.js] group onSnapshot, exists =", doc.exists);
       if (!doc.exists) {
         groupInfoEl && (groupInfoEl.textContent = "グループが見つかりませんでした。");
         return;
@@ -378,20 +537,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const data = doc.data() || {};
       groupMembers = Array.isArray(data.members) ? data.members : [];
+
       if (!isEditMode || members.length === 0) {
-        // 新規作成、またはまだゲームドキュメントが未ロードの場合のみ反映
-        const nextMembers = groupMembers.filter((m) => !removedMembers.has(m));
-        members = nextMembers;
-        // 新規作成時は live スコア購読を開始
+        members = groupMembers.filter((m) => !removedMembers.has(m));
         if (!isEditMode) {
           subscribeLiveGame();
         }
       }
+
       const groupName = data.name || "無題のイベント";
       groupInfoEl &&
         (groupInfoEl.textContent = `グループ：${groupName}（メンバー：${members.join("、")}）`);
       upsertRecentGroup({ gid: groupId, name: groupName });
-      renderScoreTable();
+
+      // メンバー変更があった場合に round を補完
+      renderRounds();
+
       if (isEditMode) {
         subscribeGameDoc();
       }
@@ -434,8 +595,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       shareUrlMessage && (shareUrlMessage.textContent = "共有URLをコピーしました。");
     } catch (err) {
       console.error("share copy error", err);
-      shareUrlMessage &&
-        (shareUrlMessage.textContent = "コピーに失敗しました。手動でコピーしてください。");
+      shareUrlMessage && (shareUrlMessage.textContent = "コピーに失敗しました。手動でコピーしてください。");
     }
   });
 
@@ -444,54 +604,44 @@ document.addEventListener("DOMContentLoaded", async () => {
     gameErrorEl && (gameErrorEl.textContent = "");
     gameSuccessEl && (gameSuccessEl.textContent = "");
 
-    // ゲーム名：未入力なら自動命名
     let gameName = (gameNameInput?.value || "").trim();
     if (!gameName) gameName = buildDefaultGameName();
 
-    // メモ：存在する場合だけ
     const memo = gameMemoInput ? (gameMemoInput.value || "").trim() : "";
 
-    // 保存するスコア（members で正規化）
-    const scoresToSave = {};
-    members.forEach((m) => {
-      const v = liveScores[m];
-      scoresToSave[m] = typeof v === "number" ? v : 0;
-    });
-
     try {
+      syncRoundsWithMembers();
+      const totals = computeTotalScores();
+
+      const payload = {
+        name: gameName || null,
+        memo: memo || "",
+        scores: totals, // 互換: 旧実装向け（合計ポイント）
+        rounds,
+        currentRoundIndex: 0,
+        totalScores: totals,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      };
+
       if (isEditMode && gameDocRef) {
-        const payload = {
-          name: gameName || null,
-          memo: memo || "",
-          scores: scoresToSave,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        };
-        if (currentGameCreatedAt) {
-          payload.createdAt = currentGameCreatedAt;
-        }
+        if (currentGameCreatedAt) payload.createdAt = currentGameCreatedAt;
         await gameDocRef.set(payload, { merge: false });
       } else {
-        await dbRef
-          .collection("groups")
-          .doc(groupId)
-          .collection("games")
-          .add({
-            name: gameName || null,
-            memo: memo || "",
-            scores: scoresToSave,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          });
+        delete payload.updatedAt;
+        payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+
+        await groupDocRef.collection("games").add(payload);
 
         if (gameNameInput) gameNameInput.value = "";
         if (gameMemoInput) gameMemoInput.value = "";
         resetLiveScores();
       }
 
-      // 保存後はゲーム結果一覧へ
       window.location.href = `game.html?gid=${groupId}`;
     } catch (err) {
-      console.error("[game.js] ゲーム結果保存エラー", err);
+      console.error("[addgame.js] ゲーム結果保存エラー", err);
       if (gameErrorEl) gameErrorEl.textContent = "ゲーム結果の保存に失敗しました。";
     }
   });
 });
+

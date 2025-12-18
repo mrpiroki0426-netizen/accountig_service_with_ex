@@ -11,15 +11,8 @@ function clamp(value, min, max) {
 }
 
 function normalizeMeanOne(map, members) {
-  const values = members.map((m) => map[m]).filter((v) => typeof v === "number" && Number.isFinite(v));
-  const mean = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 1;
-  if (!mean || !Number.isFinite(mean)) return map;
-  const out = {};
-  members.forEach((m) => {
-    const v = map[m];
-    out[m] = typeof v === "number" && Number.isFinite(v) ? v / mean : 1;
-  });
-  return out;
+  // NOTE: 以前は平均=1に正規化していたが、要望により廃止（互換のため関数は残す）
+  return map;
 }
 
 function loadRecentGroups() {
@@ -156,6 +149,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const navToGroup = document.getElementById("navToGroup");
   const navToGame = document.getElementById("navToGame");
   const navToSettle = document.getElementById("navToSettle");
+  const navToManage = document.getElementById("navToManage");
 
   function openMenu() {
     sideMenu?.classList.add("open");
@@ -175,6 +169,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = `game.html?gid=${groupId}`;
   });
   navToSettle?.addEventListener("click", closeMenu);
+  navToManage?.addEventListener("click", () => {
+    window.location.href = `manage.html?gid=${groupId}`;
+  });
 
   if (shareUrlInput) {
     shareUrlInput.value = window.location.href;
@@ -213,11 +210,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   function renderPaymentWeights({ paymentWeights, sourceLabel, members }) {
-    const normalized = normalizeMeanOne(paymentWeights || {}, members);
-
     const capped = {};
     members.forEach((m) => {
-      const v = typeof normalized[m] === "number" && Number.isFinite(normalized[m]) ? normalized[m] : 1;
+      const v = typeof paymentWeights?.[m] === "number" && Number.isFinite(paymentWeights[m]) ? paymentWeights[m] : 1;
       capped[m] = clamp(v, PAYMENT_WEIGHT_MIN, PAYMENT_WEIGHT_MAX);
     });
 
@@ -256,8 +251,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const paymentWeights = data.paymentWeights || {};
     const sourceName = data.paymentWeightsSourceGameName || "";
     const sourceLabel = sourceName
-      ? `平均=1（最後に反映したゲーム: ${sourceName}）`
-      : "平均=1（まだ確定済みゲームがありません）";
+      ? `最後に反映したゲーム: ${sourceName}`
+      : "まだ確定済みゲームがありません";
     const rates = renderPaymentWeights({ paymentWeights, sourceLabel, members });
 
     window.db

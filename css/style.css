@@ -115,6 +115,102 @@ th {
   align-self: flex-end;
 }
 
+/* ===== Modal ===== */
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: none;
+}
+
+.modal.open {
+  display: block;
+}
+
+.modal-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.48);
+}
+
+.modal-panel {
+  position: relative;
+  margin: 14vh auto 0;
+  width: min(560px, calc(100% - 24px));
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25);
+  padding: 14px 14px 16px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.modal-title {
+  font-weight: 900;
+  font-size: 16px;
+}
+
+.modal-close {
+  border: none;
+  background: transparent;
+  color: #111827;
+  font-size: 22px;
+  padding: 4px 10px;
+  width: auto;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* ===== Group Manage ===== */
+.manage-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.manage-members {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: grid;
+  gap: 10px;
+}
+
+.manage-member-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.10);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.manage-member-actions {
+  display: inline-flex;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.manage-member-actions button {
+  width: auto;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
 /* ===== メンバーリスト（タグ風） ===== */
 .member-list {
   list-style: none;
@@ -335,6 +431,15 @@ th {
     padding: 6px 10px;
   }
 
+  .round-controls {
+    align-items: stretch;
+  }
+
+  .round-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
   /* 「メンバーを追加」入力欄が潰れないようにし、追加ボタンを小さく */
   .inline.inline-stack input[type="text"] {
     width: 100%;
@@ -345,6 +450,18 @@ th {
     align-self: flex-end;
     padding: 8px 14px;
     font-size: 14px;
+  }
+
+  .modal-panel {
+    margin-top: 10vh;
+  }
+
+  .manage-member-item {
+    grid-template-columns: 1fr;
+  }
+
+  .manage-member-actions {
+    justify-content: flex-end;
   }
 }
 
@@ -481,6 +598,102 @@ th {
   line-height: 1;
 }
 
+/* ===== Rounds ===== */
+.round-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.round-label {
+  font-weight: 800;
+}
+
+.round-actions {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.round-actions button {
+  width: auto;
+}
+
+.rounds-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 10px 0 14px;
+}
+
+.round-card {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.92);
+  overflow: hidden;
+}
+
+.round-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.round-card-title {
+  font-weight: 900;
+}
+
+.round-card-actions {
+  display: inline-flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.round-card-actions button {
+  width: auto;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.round-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.round-table th,
+.round-table td {
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 10px 12px;
+  vertical-align: middle;
+}
+
+.round-table th {
+  text-align: left;
+  font-weight: 800;
+  background: rgba(15, 23, 42, 0.02);
+  white-space: nowrap;
+}
+
+.round-member {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.score-btn-remove-member {
+  background-color: #e11d48;
+  border-color: #e11d48;
+  color: #fff;
+  flex: 0 0 auto;
+}
+
 /* ===== フッター ===== */
 footer {
   text-align: center;
@@ -558,12 +771,20 @@ body.landing {
 
 .brand {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 2px;
   font-weight: 900;
   letter-spacing: 0.2px;
   text-decoration: none;
   color: #fff;
+}
+
+.brand-logo {
+  display: block;
+  height: 45px;
+  width: auto;
+  max-width: 320px;
+  object-fit: contain;
 }
 
 .brand-mark {
@@ -1081,17 +1302,19 @@ body.landing {
     font-size: 16px;
   }
 
+  .brand-logo {
+    height: 40px;
+    max-width: 260px;
+  }
+
   .nav-cta {
     padding: 9px 12px;
   }
 }
 
 @media (max-width: 380px) {
-  .brand-text {
-    display: none;
-  }
-
-  .brand {
-    gap: 0;
+  .brand-logo {
+    height: 35px;
+    max-width: 220px;
   }
 }
