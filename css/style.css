@@ -110,6 +110,11 @@ th {
   align-items: stretch;
 }
 
+.inline.inline-stack button {
+  width: fit-content;
+  align-self: flex-end;
+}
+
 /* ===== メンバーリスト（タグ風） ===== */
 .member-list {
   list-style: none;
@@ -328,6 +333,18 @@ th {
 
   .score-btn {
     padding: 6px 10px;
+  }
+
+  /* 「メンバーを追加」入力欄が潰れないようにし、追加ボタンを小さく */
+  .inline.inline-stack input[type="text"] {
+    width: 100%;
+  }
+
+  .inline.inline-stack button {
+    width: auto;
+    align-self: flex-end;
+    padding: 8px 14px;
+    font-size: 14px;
   }
 }
 
