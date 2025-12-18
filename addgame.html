@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>割り勘アプリ - ゲームのポイント記録</title>
+  <title>yamican - ゲームのポイント記録</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="css/style.css" />
 
@@ -13,14 +13,23 @@
   <!-- Firebase 設定 -->
   <script src="js/firebase.js"></script>
 </head>
-<body>
-  <!-- 共通ヘッダー（ハンバーガー＋タイトル） -->
-  <header class="app-header">
-    <button id="menuButton" class="menu-button" aria-label="メニューを開く">
-      &#9776;
-    </button>
-    <div class="app-header-title">
-      割り勘アプリ
+<body class="landing">
+  <header class="landing-header">
+    <div class="landing-header-inner">
+      <div class="landing-header-left">
+        <button id="menuButton" class="landing-menu-button" aria-label="メニューを開く">
+          &#9776;
+        </button>
+        <a class="brand" href="index.html" aria-label="yamican トップへ">
+          <span class="brand-mark">ya</span><span class="brand-text">mican</span>
+        </a>
+      </div>
+
+      <nav class="landing-nav" aria-label="サイトナビゲーション">
+        <a class="nav-link" href="index.html">トップ</a>
+        <a class="nav-link" href="contact.html">お問い合わせ</a>
+        <a class="nav-cta" href="app.html">新しいグループ</a>
+      </nav>
     </div>
   </header>
 
@@ -41,8 +50,9 @@
     </div>
   </nav>
 
-  <div class="container">
-    <h1>ゲームのポイント記録</h1>
+  <main class="landing-main">
+    <div class="container">
+      <h1>ゲームのポイント記録</h1>
 
     <!-- グループ情報 -->
     <p id="groupInfo">グループ情報を読み込み中...</p>
@@ -74,13 +84,17 @@
 
     <button id="saveGameBtn">ゲーム結果を保存</button>
     <p id="gameError" class="error"></p>
-    <p id="gameSuccess" class="helper"></p>
-  </div>
+      <p id="gameSuccess" class="helper"></p>
+    </div>
+  </main>
+
+  <footer class="landing-footer">
+    <a href="about.html">サービス説明</a> |
+    <a href="contact.html">お問い合わせ</a> |
+    <a href="privacy.html">プライバシーポリシー</a>
+  </footer>
 
   <script src="js/addgame.js"></script>
 </body>
-<footer>
-  <a href="about.html">サービス説明</a> | <a href="contact.html">お問い合わせ</a> | <a href="privacy.html">プライバシーポリシー</a>
-</footer>
 
 </html>

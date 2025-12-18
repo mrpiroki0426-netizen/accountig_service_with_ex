@@ -1,5 +1,49 @@
 // js/addgame.js
 
+const RECENT_GROUPS_KEY = "yamican.recentGroups.v1";
+const MAX_RECENT_GROUPS = 8;
+
+function loadRecentGroups() {
+  if (!window.localStorage) return [];
+
+  try {
+    const raw = window.localStorage.getItem(RECENT_GROUPS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+
+    return parsed
+      .filter(item => item && typeof item.gid === "string" && item.gid.trim().length > 0)
+      .map(item => ({
+        gid: item.gid,
+        name: typeof item.name === "string" ? item.name : "グループ",
+        lastUsedAt: typeof item.lastUsedAt === "number" ? item.lastUsedAt : 0
+      }))
+      .sort((a, b) => b.lastUsedAt - a.lastUsedAt)
+      .slice(0, MAX_RECENT_GROUPS);
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentGroups(groups) {
+  if (!window.localStorage) return;
+  window.localStorage.setItem(RECENT_GROUPS_KEY, JSON.stringify(groups));
+}
+
+function upsertRecentGroup({ gid, name }) {
+  const now = Date.now();
+  const normalizedName = (name || "").trim() || "グループ";
+
+  const current = loadRecentGroups();
+  const next = [
+    { gid, name: normalizedName, lastUsedAt: now },
+    ...current.filter(item => item.gid !== gid)
+  ].slice(0, MAX_RECENT_GROUPS);
+
+  saveRecentGroups(next);
+}
+
 // URLパラメータから gid を取得
 function getGroupIdFromQuery() {
   const params = new URLSearchParams(window.location.search);
@@ -349,6 +393,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const groupName = data.name || "無題のイベント";
       groupInfoEl &&
         (groupInfoEl.textContent = `グループ：${groupName}（メンバー：${members.join("、")}）`);
+      upsertRecentGroup({ gid: groupId, name: groupName });
       renderScoreTable();
       if (isEditMode) {
         subscribeGameDoc();

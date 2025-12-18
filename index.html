@@ -2,142 +2,166 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>割り勘アプリ｜割り勘＋ゲーム得点をURLで共有</title>
+  <title>yamican（ワリカン）｜割り勘とゲーム得点をURLで共有</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="飲み会・旅行の割り勘と、ゲームの得点管理をまとめて。URL共有でみんな同じ画面を見ながら記録できます。" />
+  <meta name="description" content="飲み会・旅行の割り勘と、ボードゲームの得点記録をまとめて。グループURLを共有して、同じ画面を見ながらその場で記録できます。" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
-<body>
-  <!-- 共通ヘッダー -->
-  <header class="app-header">
-    <button id="menuButton" class="menu-button" aria-label="メニューを開く">
-      &#9776;
-    </button>
-    <div class="app-header-title">割り勘アプリ</div>
+<body class="landing">
+  <header class="landing-header">
+    <div class="landing-header-inner">
+      <a class="brand" href="index.html" aria-label="yamican トップへ">
+        <span class="brand-mark">ya</span><span class="brand-text">mican</span>
+      </a>
+
+      <nav class="landing-nav" aria-label="トップページナビゲーション">
+        <a class="nav-link" href="#howto">使い方</a>
+        <a class="nav-link" href="#scenes">想定シーン</a>
+        <a class="nav-link" href="#future">今後</a>
+        <a class="nav-link" href="contact.html">お問い合わせ</a>
+        <a class="nav-cta" href="app.html">今すぐ使う</a>
+      </nav>
+    </div>
   </header>
 
-  <!-- サイドメニュー（統合版） -->
-  <nav id="sideMenu" class="side-menu">
-    <div class="side-menu-overlay" id="sideMenuOverlay"></div>
-    <div class="side-menu-panel">
-      <div class="side-menu-header">
-        <span class="side-menu-title">メニュー</span>
-        <button id="closeMenuButton" class="side-menu-close" aria-label="メニューを閉じる">×</button>
+  <main class="landing-main">
+    <section class="hero" aria-label="メインビジュアル">
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <div class="pill-row" aria-label="特徴">
+            <span class="pill">自動計算</span>
+            <span class="pill">登録不要</span>
+            <span class="pill">無料</span>
+          </div>
+
+          <h1 class="hero-title">
+            <span class="accent-light">割り勘</span>も、<span class="accent-dark">ゲーム得点</span>も。<br />
+            URL共有で、その場で決着。
+          </h1>
+
+          <p class="hero-lead">
+            飲み会・旅行の立て替えから、ボードゲーム会のスコア記録まで。<br />
+            グループURLを共有して、全員が同じ画面で確認できます。
+          </p>
+
+          <div class="hero-actions">
+            <a class="btn btn-primary" href="app.html">今すぐ使う（登録不要）</a>
+            <a class="btn btn-ghost" href="#howto">使い方を見る</a>
+          </div>
+
+          <p class="hero-sub">
+            まずはグループを作成 → URLをLINEなどで共有するだけ。
+          </p>
+        </div>
+
+        <div class="hero-visual" aria-hidden="true">
+          <div class="split-cards">
+            <div class="hero-card hero-card-light">
+              <div class="hero-card-kicker">光</div>
+              <div class="hero-card-title">割り勘</div>
+              <div class="hero-card-desc">立て替えを入力 → 自動で精算</div>
+              <div class="hero-card-tags">
+                <span class="tag">立替</span>
+                <span class="tag">自動精算</span>
+                <span class="tag">URL共有</span>
+              </div>
+            </div>
+
+            <div class="hero-card hero-card-dark">
+              <div class="hero-card-kicker">闇</div>
+              <div class="hero-card-title">ゲーム記録</div>
+              <div class="hero-card-desc">得点を入力 → その場で反映</div>
+              <div class="hero-card-tags">
+                <span class="tag">スコア</span>
+                <span class="tag">リアルタイム</span>
+                <span class="tag">記録</span>
+              </div>
+            </div>
+          </div>
+
+          
+        </div>
       </div>
-      <ul class="side-menu-list">
-        <li><button id="navToApp" class="side-menu-item">今すぐ使う</button></li>
-        <li><button id="navToHow" class="side-menu-item">使い方</button></li>
-        <li><button id="navToScenes" class="side-menu-item">想定シーン</button></li>
-        <li><button id="navToFuture" class="side-menu-item">今後の機能</button></li>
-      </ul>
-    </div>
-  </nav>
+    </section>
 
-  <div class="container">
-    <!-- ===== ヒーロー（LP） ===== -->
-    <h1>割り勘も、ゲームの得点も。<br>URLで共有して、その場で決着。</h1>
+    <section class="landing-section" aria-label="できること">
+      <div class="section-inner">
+        <h2 class="section-title">できること</h2>
+        <div class="feature-grid">
+          <div class="feature-card">
+            <div class="feature-title">グループ作成・URL共有</div>
+            <p class="feature-desc">イベント名とメンバーを登録して、URLを共有するだけ。</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-title">立て替えを自動精算</div>
+            <p class="feature-desc">入力した立て替えから、精算額を自動で計算します。</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-title">ゲーム得点をリアルタイム共有</div>
+            <p class="feature-desc">みんな同じ画面を見ながら、スコアを記録できます。</p>
+          </div>
+        </div>
 
-    <p>
-      飲み会・旅行・ボードゲーム会で発生する<br>
-      <strong>「立て替え」</strong>と<strong>「得点」</strong>を1つのグループにまとめて記録できます。
-    </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="app.html">グループを作成する</a>
+          <a class="btn btn-secondary" href="contact.html">お問い合わせ</a>
+        </div>
+      </div>
+    </section>
 
-    <div class="form-group">
-      <button id="ctaStartBtn">今すぐ使う（グループ作成へ）</button>
-      <p class="helper" style="margin-top:8px;">
-        お問い合わせ：<a href="contact.html">こちら</a>
-      </p>
-    </div>
+    <section class="landing-section landing-section-muted" id="howto" aria-label="使い方">
+      <div class="section-inner">
+        <h2 class="section-title">使い方（かんたん3ステップ）</h2>
+        <ol class="steps">
+          <li>トップの「今すぐ使う」から、イベント名・メンバーを登録</li>
+          <li>作成されたURLをLINEなどに貼って共有</li>
+          <li>「勘定」「ゲーム記録」を入力し、同じ画面で確認</li>
+        </ol>
 
-    <h2>できること</h2>
-    <ul>
-      <li>グループを作成してURLで共有</li>
-      <li>立て替え入力 → 自動で精算が分かる</li>
-      <li>ゲーム得点をリアルタイムで共有・記録</li>
-    </ul>
+        <div class="note-cards">
+          <div class="note-card">
+            <div class="note-title">インストール不要</div>
+            <p class="note-desc">Webでそのまま使えます。</p>
+          </div>
+          <div class="note-card">
+            <div class="note-title">入力の手間を最小化</div>
+            <p class="note-desc">未入力や重複を減らす設計でサクッと記録。</p>
+          </div>
+        </div>
+      </div>
+    </section>
 
-    <hr style="border:none;border-top:1px solid #e5e7eb;margin:16px 0;">
+    <section class="landing-section" id="scenes" aria-label="想定シーン">
+      <div class="section-inner">
+        <h2 class="section-title">想定シーン</h2>
+        <ul class="list">
+          <li>友だちとの旅行・合宿の精算</li>
+          <li>飲み会での割り勘 + ミニゲームの得点管理</li>
+          <li>ボードゲーム会・カードゲーム会のスコアボード</li>
+        </ul>
+      </div>
+    </section>
 
-    <!-- ===== ここからサービス説明（旧 about 内容） ===== -->
-    <h2 id="howto">使い方（かんたん3ステップ）</h2>
-    <ol>
-      <li>トップ（グループ作成）でイベント名・メンバーを登録</li>
-      <li>作成されたURLをLINEに貼って共有</li>
-      <li>「勘定」「ゲーム記録」を入力し、みんなで同じ画面を確認</li>
-    </ol>
+    <section class="landing-section landing-section-muted" id="future" aria-label="今後">
+      <div class="section-inner">
+        <h2 class="section-title">今後追加予定の機能（例）</h2>
+        <ul class="list">
+          <li>精算結果のスクリーンショット向けレイアウト</li>
+          <li>ゲーム別ランキング表示</li>
+          <li>よく使うメンバーのテンプレート登録</li>
+        </ul>
 
-    <h2>補足</h2>
-    <ul>
-      <li>アプリのインストール不要（Webで動きます）</li>
-      <li>未入力＝0など、入力の手間を減らす設計です</li>
-    </ul>
+        <p class="helper">
+          ご意見・ご要望は <a href="contact.html">お問い合わせページ</a> から教えてください。
+        </p>
+      </div>
+    </section>
+  </main>
 
-    <h2 id="scenes">想定シーン</h2>
-    <ul>
-      <li>友だちとの旅行・合宿の精算</li>
-      <li>宅飲みでの割り勘＋ミニゲームの得点管理</li>
-      <li>ボードゲーム会・カードゲーム会でのスコアボード</li>
-    </ul>
-
-    <h2 id="future">今後追加予定の機能（例）</h2>
-    <ul>
-      <li>精算結果のスクリーンショット用レイアウト</li>
-      <li>ゲーム別のランキング表示</li>
-      <li>よく使うメンバーのテンプレート登録</li>
-    </ul>
-
-    <p class="helper">
-      ご意見・ご要望があれば、<a href="contact.html">お問い合わせページ</a>からぜひ教えてください。
-    </p>
-  </div>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      // ハンバーガー
-      const menuButton = document.getElementById("menuButton");
-      const sideMenu = document.getElementById("sideMenu");
-      const sideMenuOverlay = document.getElementById("sideMenuOverlay");
-      const closeMenuButton = document.getElementById("closeMenuButton");
-
-      // メニュー項目
-      const navToApp = document.getElementById("navToApp");
-      const navToHow = document.getElementById("navToHow");
-      const navToScenes = document.getElementById("navToScenes");
-      const navToFuture = document.getElementById("navToFuture");
-      const navToContact = document.getElementById("navToContact");
-
-      // CTA
-      const ctaStartBtn = document.getElementById("ctaStartBtn");
-
-      function openMenu(){ sideMenu?.classList.add("open"); }
-      function closeMenu(){ sideMenu?.classList.remove("open"); }
-
-      menuButton?.addEventListener("click", openMenu);
-      closeMenuButton?.addEventListener("click", closeMenu);
-      sideMenuOverlay?.addEventListener("click", closeMenu);
-
-      // 遷移
-      navToApp?.addEventListener("click", () => { window.location.href = "app.html"; });
-
-      // ページ内スクロール
-      function scrollToId(id) {
-        const el = document.getElementById(id);
-        if (!el) return;
-        closeMenu();
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-
-      navToHow?.addEventListener("click", () => scrollToId("howto"));
-      navToScenes?.addEventListener("click", () => scrollToId("scenes"));
-      navToFuture?.addEventListener("click", () => scrollToId("future"));
-
-      navToContact?.addEventListener("click", () => { window.location.href = "contact.html"; });
-
-      ctaStartBtn?.addEventListener("click", () => { window.location.href = "app.html"; });
-    });
-  </script>
+  <footer class="landing-footer">
+    <a href="about.html">サービス説明</a> |
+    <a href="contact.html">お問い合わせ</a> |
+    <a href="privacy.html">プライバシーポリシー</a>
+  </footer>
 </body>
-<footer>
-  <a href="about.html">サービス説明</a> | <a href="contact.html">お問い合わせ</a> | <a href="privacy.html">プライバシーポリシー</a>
-</footer>
 </html>

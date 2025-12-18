@@ -3,7 +3,7 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta charset="UTF-8" />
-  <title>割り勘アプリ - グループ作成</title>
+  <title>yamican - グループ作成</title>
   <link rel="stylesheet" href="./css/style.css" />
 
   <!-- Firebase SDK (compat版) -->
@@ -13,14 +13,36 @@
   <!-- Firebase設定 -->
   <script src="js/firebase.js"></script>
 </head>
-<body>
-  <div class="container">
-    <h1>割り勘グループを作成</h1>
+<body class="landing">
+  <header class="landing-header">
+    <div class="landing-header-inner">
+      <a class="brand" href="index.html" aria-label="yamican トップへ">
+        <span class="brand-mark">ya</span><span class="brand-text">mican</span>
+      </a>
 
-    <div class="form-group">
-      <label for="eventName">イベント名</label>
-      <input type="text" id="eventName" placeholder="例：沖縄旅行、忘年会" />
+      <nav class="landing-nav" aria-label="サイトナビゲーション">
+        <a class="nav-link" href="index.html#howto">使い方</a>
+        <a class="nav-link" href="index.html#scenes">想定シーン</a>
+        <a class="nav-link" href="index.html#future">今後</a>
+        <a class="nav-link" href="contact.html">お問い合わせ</a>
+        <a class="nav-cta" href="app.html">今すぐ使う</a>
+      </nav>
     </div>
+  </header>
+
+  <main class="landing-main">
+    <div class="container">
+      <h1>グループを作成</h1>
+
+      <h2>最近使ったグループ</h2>
+      <p id="recentGroupsEmpty" class="helper">まだありません。グループを作成するとここに表示されます。</p>
+      <ul id="recentGroupsList" class="recent-groups-list" aria-label="最近使ったグループ一覧"></ul>
+      <button type="button" id="clearRecentGroupsBtn" class="secondary">履歴をクリア</button>
+
+      <div class="form-group">
+        <label for="eventName">イベント名</label>
+        <input type="text" id="eventName" placeholder="例：沖縄旅行、忘年会" />
+      </div>
 
     <div class="form-group">
       <label for="memberName">メンバーを追加</label>
@@ -40,12 +62,16 @@
     <button id="createGroupBtn">グループを作成</button>
 
     <p id="errorMessage" class="error"></p>
-  </div>
+    </div>
+  </main>
+
+  <footer class="landing-footer">
+    <a href="about.html">サービス説明</a> |
+    <a href="contact.html">お問い合わせ</a> |
+    <a href="privacy.html">プライバシーポリシー</a>
+  </footer>
 
   <script src="js/index.js"></script>
 </body>
-<footer>
-  <a href="about.html">サービス説明</a> | <a href="contact.html">お問い合わせ</a> | <a href="privacy.html">プライバシーポリシー</a>
-</footer>
 
 </html>
