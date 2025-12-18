@@ -622,6 +622,12 @@ th {
   width: auto;
 }
 
+.round-actions-bottom {
+  width: 100%;
+  justify-content: flex-end;
+  margin: 6px 0 14px;
+}
+
 .rounds-container {
   display: flex;
   flex-direction: column;
