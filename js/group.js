@@ -310,6 +310,7 @@ function getGroupIdFromQuery() {
 
   const navToGroup = document.getElementById("navToGroup");
   const navToGame = document.getElementById("navToGame");
+  const navToSosou = document.getElementById("navToSosou");
   const navToAbout = document.getElementById("navToAbout");
   const navToContact = document.getElementById("navToContact");
   const navToSettle = document.getElementById("navToSettle");
@@ -331,6 +332,10 @@ function getGroupIdFromQuery() {
 
   navToGame?.addEventListener("click", () => {
     window.location.href = `game.html?gid=${groupId}`;
+  });
+
+  navToSosou?.addEventListener("click", () => {
+    window.location.href = `sosou.html?gid=${groupId}`;
   });
 
   navToSettle?.addEventListener("click", () => {

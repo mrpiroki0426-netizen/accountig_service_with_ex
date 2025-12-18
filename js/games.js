@@ -443,6 +443,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const navToGroup = document.getElementById("navToGroup");
   const navToGame = document.getElementById("navToGame");
+  const navToSosou = document.getElementById("navToSosou");
   const navToSettle = document.getElementById("navToSettle");
   const navToManage = document.getElementById("navToManage");
 
@@ -463,6 +464,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   navToGame?.addEventListener("click", closeMenu);
+
+  navToSosou?.addEventListener("click", () => {
+    window.location.href = `sosou.html?gid=${groupId}`;
+  });
 
   navToSettle?.addEventListener("click", () => {
     window.location.href = `settlement.html?gid=${groupId}`;
