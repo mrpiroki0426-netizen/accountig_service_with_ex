@@ -353,6 +353,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const copyShareUrlBtn = document.getElementById("copyShareUrlBtn");
   const shareShareUrlBtn = document.getElementById("shareShareUrlBtn");
 
+  const goToGroupBtn = document.getElementById("goToGroupBtn");
+  const goToAddGameBtn = document.getElementById("goToAddGameBtn");
+
   const menuButton = document.getElementById("menuButton");
   const sideMenu = document.getElementById("sideMenu");
   const sideMenuOverlay = document.getElementById("sideMenuOverlay");
@@ -388,6 +391,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = `settlement.html?gid=${groupId}`;
   });
   navToManage?.addEventListener("click", closeMenu);
+
+  goToGroupBtn?.addEventListener("click", () => {
+    window.location.href = `group.html?gid=${groupId}`;
+  });
+  goToAddGameBtn?.addEventListener("click", () => {
+    window.location.href = `addgame.html?gid=${groupId}`;
+  });
 
   const shareUrl = buildGroupUrl(groupId);
   if (shareUrlInput) shareUrlInput.value = shareUrl;

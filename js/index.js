@@ -166,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const a = document.createElement("a");
       a.className = "recent-group-link";
-      a.href = `group.html?gid=${encodeURIComponent(group.gid)}`;
+      a.href = `manage.html?gid=${encodeURIComponent(group.gid)}`;
       a.textContent = group.name || "グループ";
 
       const meta = document.createElement("div");
@@ -288,12 +288,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const opened = openShareModal({
         url: groupUrl,
         onOpen: () => {
-          window.location.href = `group.html?gid=${docRef.id}`;
+          window.location.href = `manage.html?gid=${docRef.id}`;
         }
       });
 
       if (!opened) {
-        window.location.href = `group.html?gid=${docRef.id}`;
+        window.location.href = `manage.html?gid=${docRef.id}`;
       }
     } catch (err) {
       console.error(err);

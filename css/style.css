@@ -180,6 +180,17 @@ th {
   margin-bottom: 10px;
 }
 
+.manage-shortcuts {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 6px 0 16px;
+}
+
+.manage-shortcuts button {
+  width: auto;
+}
+
 .manage-members {
   list-style: none;
   padding: 0;
