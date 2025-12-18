@@ -55,6 +55,28 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function applyRateBadge(el, rateValue) {
+  if (!el) return;
+  const rate = typeof rateValue === "number" && Number.isFinite(rateValue) ? rateValue : 1;
+
+  // 1 からの距離に応じて色を強くする（>1 は緑、<1 は赤）
+  const diff = rate - 1;
+  const intensity = clamp(Math.abs(diff) / 0.8, 0, 1);
+  const alpha = 0.12 + 0.42 * intensity;
+
+  if (diff >= 0) {
+    el.style.backgroundColor = `rgba(34, 197, 94, ${alpha})`; // green
+    el.style.borderColor = `rgba(34, 197, 94, ${0.18 + 0.35 * intensity})`;
+    el.style.color = intensity >= 0.55 ? "#052e16" : "#14532d";
+  } else {
+    el.style.backgroundColor = `rgba(239, 68, 68, ${alpha})`; // red
+    el.style.borderColor = `rgba(239, 68, 68, ${0.18 + 0.35 * intensity})`;
+    el.style.color = intensity >= 0.55 ? "#7f1d1d" : "#991b1b";
+  }
+
+  el.classList.add("rate-badge");
+}
+
 function signedSqrt(value) {
   const v = Number(value);
   if (!Number.isFinite(v) || v === 0) return 0;
@@ -166,7 +188,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         const tdRate = document.createElement("td");
         tdName.textContent = m;
         const v = typeof paymentWeights?.[m] === "number" && Number.isFinite(paymentWeights[m]) ? paymentWeights[m] : 1;
-        tdRate.textContent = v.toFixed(2);
+        const badge = document.createElement("span");
+        badge.textContent = v.toFixed(2);
+        applyRateBadge(badge, v);
+        tdRate.appendChild(badge);
         tr.appendChild(tdName);
         tr.appendChild(tdRate);
         ratingsBody.appendChild(tr);
@@ -384,9 +409,15 @@ document.addEventListener("DOMContentLoaded", async () => {
           const factorValue = d.ratingConfirmed
             ? storedRatingFactors?.[name]
             : computedRatingFactors?.[name];
-          const factorText =
-            typeof factorValue === "number" && Number.isFinite(factorValue) ? factorValue.toFixed(2) : "—";
-          tdFactor.textContent = factorText;
+          const isNumber = typeof factorValue === "number" && Number.isFinite(factorValue);
+          if (isNumber) {
+            const badge = document.createElement("span");
+            badge.textContent = factorValue.toFixed(2);
+            applyRateBadge(badge, factorValue);
+            tdFactor.appendChild(badge);
+          } else {
+            tdFactor.textContent = "—";
+          }
           tr.appendChild(tdName);
           tr.appendChild(tdScore);
           tr.appendChild(tdFactor);

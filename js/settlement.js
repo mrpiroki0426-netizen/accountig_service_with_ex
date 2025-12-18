@@ -10,6 +10,27 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function applyRateBadge(el, rateValue) {
+  if (!el) return;
+  const rate = typeof rateValue === "number" && Number.isFinite(rateValue) ? rateValue : 1;
+
+  const diff = rate - 1;
+  const intensity = clamp(Math.abs(diff) / 0.8, 0, 1);
+  const alpha = 0.12 + 0.42 * intensity;
+
+  if (diff >= 0) {
+    el.style.backgroundColor = `rgba(34, 197, 94, ${alpha})`;
+    el.style.borderColor = `rgba(34, 197, 94, ${0.18 + 0.35 * intensity})`;
+    el.style.color = intensity >= 0.55 ? "#052e16" : "#14532d";
+  } else {
+    el.style.backgroundColor = `rgba(239, 68, 68, ${alpha})`;
+    el.style.borderColor = `rgba(239, 68, 68, ${0.18 + 0.35 * intensity})`;
+    el.style.color = intensity >= 0.55 ? "#7f1d1d" : "#991b1b";
+  }
+
+  el.classList.add("rate-badge");
+}
+
 function normalizeMeanOne(map, members) {
   // NOTE: 以前は平均=1に正規化していたが、要望により廃止（互換のため関数は残す）
   return map;
@@ -223,7 +244,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         const tdName = document.createElement("td");
         const tdRate = document.createElement("td");
         tdName.textContent = m;
-        tdRate.textContent = capped[m].toFixed(2);
+        const badge = document.createElement("span");
+        badge.textContent = capped[m].toFixed(2);
+        applyRateBadge(badge, capped[m]);
+        tdRate.appendChild(badge);
         tr.appendChild(tdName);
         tr.appendChild(tdRate);
         ratingsBody.appendChild(tr);
