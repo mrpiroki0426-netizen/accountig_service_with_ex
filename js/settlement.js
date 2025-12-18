@@ -3,6 +3,25 @@
 const RECENT_GROUPS_KEY = "yamican.recentGroups.v1";
 const MAX_RECENT_GROUPS = 8;
 
+const PAYMENT_WEIGHT_MIN = 0.5;
+const PAYMENT_WEIGHT_MAX = 2.0;
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function normalizeMeanOne(map, members) {
+  const values = members.map((m) => map[m]).filter((v) => typeof v === "number" && Number.isFinite(v));
+  const mean = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 1;
+  if (!mean || !Number.isFinite(mean)) return map;
+  const out = {};
+  members.forEach((m) => {
+    const v = map[m];
+    out[m] = typeof v === "number" && Number.isFinite(v) ? v / mean : 1;
+  });
+  return out;
+}
+
 function loadRecentGroups() {
   if (!window.localStorage) return [];
 
@@ -49,8 +68,9 @@ function getGroupIdFromQuery() {
   return params.get("gid");
 }
 
-// 割り勘計算ロジック（レーティングで重み付け）
-function calculateSettlement(members, expenses, ratings = {}) {
+// 割り勘計算ロジック（支払いレートで負担を調整）
+// レートが高いほど負担が小さくなるよう、配分は「1/レート」で重み付けする
+function calculateSettlement(members, expenses, rates = {}) {
   const paid = {};
   const shouldPay = {};
 
@@ -62,12 +82,18 @@ function calculateSettlement(members, expenses, ratings = {}) {
   expenses.forEach((exp) => {
     const { amount, paidBy, targets } = exp;
     if (!amount || !paidBy || !targets || targets.length === 0) return;
-    const weights = targets.map((t) => ratings[t] ?? 1);
+    const weights = targets.map((t) => {
+      const r = rates[t];
+      const rate = typeof r === "number" && Number.isFinite(r) && r > 0 ? r : 1;
+      return 1 / rate;
+    });
     const totalWeight = weights.reduce((a, b) => a + b, 0) || targets.length;
 
     paid[paidBy] = (paid[paidBy] || 0) + amount;
     targets.forEach((t) => {
-      const w = ratings[t] ?? 1;
+      const r = rates[t];
+      const rate = typeof r === "number" && Number.isFinite(r) && r > 0 ? r : 1;
+      const w = 1 / rate;
       const share = (amount * w) / totalWeight;
       shouldPay[t] = (shouldPay[t] || 0) + share;
     });
@@ -186,70 +212,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // レーティング計算: 最新の「結果確定」ゲームを基準に、平均が1になるよう正規化
-  async function loadRatings(members) {
-    const ratings = {};
-    members.forEach((m) => (ratings[m] = 1));
-    const info = { label: "確定済みゲームなし" };
-    try {
-      const gamesCol = window.db.collection("groups").doc(groupId).collection("games");
+  function renderPaymentWeights({ paymentWeights, sourceLabel, members }) {
+    const normalized = normalizeMeanOne(paymentWeights || {}, members);
 
-      // 1. ratingConfirmed=true の中で最新
-      let snap = await gamesCol.where("ratingConfirmed", "==", true).orderBy("createdAt", "desc").limit(1).get();
-      // 2. なければ全件から最新
-      if (snap.empty) {
-        snap = await gamesCol.orderBy("createdAt", "desc").limit(1).get();
-      }
+    const capped = {};
+    members.forEach((m) => {
+      const v = typeof normalized[m] === "number" && Number.isFinite(normalized[m]) ? normalized[m] : 1;
+      capped[m] = clamp(v, PAYMENT_WEIGHT_MIN, PAYMENT_WEIGHT_MAX);
+    });
 
-      if (!snap.empty) {
-        const doc = snap.docs[0];
-        const data = doc.data() || {};
-        const scores = data.scores || {};
-        const scoreVals = members
-          .map((m) => scores[m])
-          .filter((v) => typeof v === "number");
-        const avg = scoreVals.length > 0 ? scoreVals.reduce((a, b) => a + b, 0) / scoreVals.length : 0;
-        if (avg !== 0) {
-          members.forEach((m) => {
-            const v = scores[m];
-            ratings[m] = typeof v === "number" ? v / avg : 1;
-          });
-        }
-        info.label = data.name || "最新ゲーム";
-        if (data.createdAt?.toDate) {
-          const t = data.createdAt.toDate();
-          const yyyy = t.getFullYear();
-          const mm = String(t.getMonth() + 1).padStart(2, "0");
-          const dd = String(t.getDate()).padStart(2, "0");
-          const hh = String(t.getHours()).padStart(2, "0");
-          const mi = String(t.getMinutes()).padStart(2, "0");
-          info.label += `（${yyyy}/${mm}/${dd} ${hh}:${mi}）`;
-        }
-        if (data.ratingConfirmed) {
-          info.label = `確定：${info.label}`;
-        }
-      }
-    } catch (err) {
-      console.warn("[settlement.js] rating load error", err);
-    }
-    // 表示
     if (ratingsBody) {
       ratingsBody.innerHTML = "";
-      Object.keys(ratings).forEach((m) => {
+      members.forEach((m) => {
         const tr = document.createElement("tr");
         const tdName = document.createElement("td");
         const tdRate = document.createElement("td");
         tdName.textContent = m;
-        tdRate.textContent = ratings[m].toFixed(2);
+        tdRate.textContent = capped[m].toFixed(2);
         tr.appendChild(tdName);
         tr.appendChild(tdRate);
         ratingsBody.appendChild(tr);
       });
     }
+
     if (ratingInfo) {
-      ratingInfo.textContent = `基準レーティング：1（${info.label} を元に算出）`;
+      ratingInfo.textContent = `${sourceLabel}（レートが高いほど負担が小さくなります）`;
     }
-    return ratings;
+
+    return capped;
   }
 
   try {
@@ -263,8 +253,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const groupName = data.name || "無題のイベント";
     groupInfoEl.textContent = `グループ：${groupName}（メンバー：${members.join("、")}）`;
     upsertRecentGroup({ gid: groupId, name: groupName });
-
-    const ratings = await loadRatings(members);
+    const paymentWeights = data.paymentWeights || {};
+    const sourceName = data.paymentWeightsSourceGameName || "";
+    const sourceLabel = sourceName
+      ? `平均=1（最後に反映したゲーム: ${sourceName}）`
+      : "平均=1（まだ確定済みゲームがありません）";
+    const rates = renderPaymentWeights({ paymentWeights, sourceLabel, members });
 
     window.db
       .collection("groups")
@@ -303,42 +297,59 @@ document.addEventListener("DOMContentLoaded", async () => {
           expensesBody.appendChild(tr);
         });
 
-        // メンバー別の合計を描画（レーティングで負担を重み付け）
+        // メンバー別の合計を描画（レートが高いほど負担が小さい）
         if (totalsBody) {
           totalsBody.innerHTML = "";
           const paid = {};
-          const shouldPay = {};
+          const shouldPayBeforeRate = {};
+          const shouldPayAfterRate = {};
           members.forEach((m) => {
             paid[m] = 0;
-            shouldPay[m] = 0;
+            shouldPayBeforeRate[m] = 0;
+            shouldPayAfterRate[m] = 0;
           });
           expenses.forEach((exp) => {
             if (!exp.targets || exp.targets.length === 0) return;
-            const weights = exp.targets.map((t) => ratings[t] ?? 1);
-            const totalWeight = weights.reduce((a, b) => a + b, 0) || exp.targets.length;
+            const targetCount = exp.targets.length;
+            const shareBefore = targetCount ? exp.amount / targetCount : 0;
+
+            const weightsAfter = exp.targets.map((t) => {
+              const r = rates[t];
+              const rate = typeof r === "number" && Number.isFinite(r) && r > 0 ? r : 1;
+              return 1 / rate;
+            });
+            const totalWeightAfter = weightsAfter.reduce((a, b) => a + b, 0) || targetCount;
+
             if (exp.paidBy) {
               paid[exp.paidBy] = (paid[exp.paidBy] || 0) + (exp.amount || 0);
             }
             exp.targets.forEach((t) => {
-              const w = ratings[t] ?? 1;
-              const share = totalWeight ? (exp.amount * w) / totalWeight : exp.amount / exp.targets.length;
-              shouldPay[t] = (shouldPay[t] || 0) + share;
+              shouldPayBeforeRate[t] = (shouldPayBeforeRate[t] || 0) + shareBefore;
+
+              const r = rates[t];
+              const rate = typeof r === "number" && Number.isFinite(r) && r > 0 ? r : 1;
+              const w = 1 / rate;
+              const shareAfter = totalWeightAfter ? (exp.amount * w) / totalWeightAfter : shareBefore;
+              shouldPayAfterRate[t] = (shouldPayAfterRate[t] || 0) + shareAfter;
             });
           });
           members.forEach((m) => {
             const tr = document.createElement("tr");
             const tdName = document.createElement("td");
             const tdPaid = document.createElement("td");
-            const tdShould = document.createElement("td");
+            const tdShouldBefore = document.createElement("td");
+            const tdShouldAfter = document.createElement("td");
             const tdBalance = document.createElement("td");
-            const balance = (paid[m] || 0) - (shouldPay[m] || 0);
+            const balance = (paid[m] || 0) - (shouldPayAfterRate[m] || 0);
             tdName.textContent = m;
             tdPaid.textContent = `${Math.round(paid[m] || 0).toLocaleString()}円`;
-            tdShould.textContent = `${Math.round(shouldPay[m] || 0).toLocaleString()}円`;
+            tdShouldBefore.textContent = `${Math.round(shouldPayBeforeRate[m] || 0).toLocaleString()}円`;
+            tdShouldAfter.textContent = `${Math.round(shouldPayAfterRate[m] || 0).toLocaleString()}円`;
             tdBalance.textContent = `${balance >= 0 ? "+" : ""}${Math.round(balance).toLocaleString()}円`;
             tr.appendChild(tdName);
             tr.appendChild(tdPaid);
-            tr.appendChild(tdShould);
+            tr.appendChild(tdShouldBefore);
+            tr.appendChild(tdShouldAfter);
             tr.appendChild(tdBalance);
             totalsBody.appendChild(tr);
           });
@@ -350,7 +361,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           li.textContent = "まだ立て替えが登録されていません。";
           settlementList.appendChild(li);
         } else {
-          const settlement = calculateSettlement(members, expenses, ratings);
+          const settlement = calculateSettlement(members, expenses, rates);
           if (settlement.length === 0) {
             const li = document.createElement("li");
             li.textContent = "すでに公平な状態です。誰も支払う必要はありません。";

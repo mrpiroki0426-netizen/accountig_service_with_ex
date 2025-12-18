@@ -3,6 +3,13 @@
 const RECENT_GROUPS_KEY = "yamican.recentGroups.v1";
 const MAX_RECENT_GROUPS = 8;
 
+const PAYMENT_WEIGHTS_VERSION = 1;
+const PAYMENT_WEIGHTS_ALPHA = 0.12; // 影響度（大きいほど差が広がる）
+const PAYMENT_FACTOR_MIN = 0.7; // 1ゲームでの変動幅（下限）
+const PAYMENT_FACTOR_MAX = 1.3; // 1ゲームでの変動幅（上限）
+const PAYMENT_WEIGHT_MIN = 0.5; // 累積重みの下限
+const PAYMENT_WEIGHT_MAX = 2.0; // 累積重みの上限
+
 function loadRecentGroups() {
   if (!window.localStorage) return [];
 
@@ -44,6 +51,67 @@ function upsertRecentGroup({ gid, name }) {
   saveRecentGroups(next);
 }
 
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function signedSqrt(value) {
+  const v = Number(value);
+  if (!Number.isFinite(v) || v === 0) return 0;
+  return Math.sign(v) * Math.sqrt(Math.abs(v));
+}
+
+function normalizeMeanOne(map, members) {
+  const values = members.map((m) => map[m]).filter((v) => typeof v === "number" && Number.isFinite(v));
+  const mean = values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : 1;
+  if (!mean || !Number.isFinite(mean)) return map;
+  const out = {};
+  members.forEach((m) => {
+    const v = map[m];
+    out[m] = typeof v === "number" && Number.isFinite(v) ? v / mean : 1;
+  });
+  return out;
+}
+
+function computeNextPaymentWeights({ members, scores, currentWeights }) {
+  const raw = members.map((m) => signedSqrt(scores?.[m] ?? 0));
+  const mean = raw.length > 0 ? raw.reduce((a, b) => a + b, 0) / raw.length : 0;
+
+  const rawFactors = {};
+  members.forEach((m, idx) => {
+    const centered = raw[idx] - mean;
+    rawFactors[m] = Math.exp(PAYMENT_WEIGHTS_ALPHA * centered);
+  });
+
+  const factorsMean = members.length > 0
+    ? members.reduce((sum, m) => sum + (rawFactors[m] || 1), 0) / members.length
+    : 1;
+
+  const normalizedFactors = {};
+  members.forEach((m) => {
+    const base = rawFactors[m] || 1;
+    const normalized = factorsMean ? base / factorsMean : 1;
+    normalizedFactors[m] = clamp(normalized, PAYMENT_FACTOR_MIN, PAYMENT_FACTOR_MAX);
+  });
+
+  const nextWeightsRaw = {};
+  members.forEach((m) => {
+    const current = typeof currentWeights?.[m] === "number" && Number.isFinite(currentWeights[m]) && currentWeights[m] > 0
+      ? currentWeights[m]
+      : 1;
+    nextWeightsRaw[m] = current * normalizedFactors[m];
+  });
+
+  const nextWeightsNormalized = normalizeMeanOne(nextWeightsRaw, members);
+
+  const nextWeights = {};
+  members.forEach((m) => {
+    nextWeights[m] = clamp(nextWeightsNormalized[m] ?? 1, PAYMENT_WEIGHT_MIN, PAYMENT_WEIGHT_MAX);
+  });
+
+  return { factors: normalizedFactors, nextWeights };
+}
+
 // URLパラメータから gid を取得
 function getGroupIdFromQuery() {
   const params = new URLSearchParams(window.location.search);
@@ -73,8 +141,51 @@ document.addEventListener("DOMContentLoaded", async () => {
   const groupInfoEl = document.getElementById("groupInfo");
   const gamesListEl = document.getElementById("gamesList");
   const addNewGameBtn = document.getElementById("addNewGameBtn");
+  const ratingsBody = document.getElementById("ratingsBody");
+  const ratingInfo = document.getElementById("ratingInfo");
 
   let members = [];
+  let groupName = "無題のイベント";
+
+  function renderPaymentWeights({ paymentWeights, sourceLabel }) {
+    const weights = paymentWeights || {};
+    const normalized = normalizeMeanOne(weights, members);
+
+    if (ratingsBody) {
+      ratingsBody.innerHTML = "";
+      members.forEach((m) => {
+        const tr = document.createElement("tr");
+        const tdName = document.createElement("td");
+        const tdRate = document.createElement("td");
+        tdName.textContent = m;
+        const v = typeof normalized[m] === "number" && Number.isFinite(normalized[m]) ? normalized[m] : 1;
+        tdRate.textContent = v.toFixed(2);
+        tr.appendChild(tdName);
+        tr.appendChild(tdRate);
+        ratingsBody.appendChild(tr);
+      });
+    }
+
+    if (ratingInfo) {
+      ratingInfo.textContent = `平均=1（${sourceLabel}）`;
+    }
+  }
+
+  async function loadPaymentWeightsFromGroup() {
+    if (!ratingInfo && !ratingsBody) return;
+
+    try {
+      const groupDoc = await dbRef.collection("groups").doc(groupId).get();
+      const data = groupDoc.data() || {};
+      const paymentWeights = data.paymentWeights || {};
+      const sourceName = data.paymentWeightsSourceGameName || "";
+      const sourceLabel = sourceName ? `最後に反映したゲーム: ${sourceName}` : "まだ確定済みゲームがありません";
+      renderPaymentWeights({ paymentWeights, sourceLabel });
+    } catch (err) {
+      console.warn("[games.js] payment weights load error", err);
+      renderPaymentWeights({ paymentWeights: {}, sourceLabel: "支払いレートを取得できませんでした" });
+    }
+  }
 
   // ===== グループ情報の取得 =====
   try {
@@ -90,9 +201,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.log("[games.js] group data =", data);
 
     members = data.members || [];
-    const groupName = data.name || "無題のイベント";
+    groupName = data.name || "無題のイベント";
     groupInfoEl.textContent = `グループ：${groupName}（メンバー：${members.join("、")}）`;
     upsertRecentGroup({ gid: groupId, name: groupName });
+
+    await loadPaymentWeightsFromGroup();
     console.log("[games.js] members loaded:", members);
   } catch (err) {
     console.error("[games.js] グループ情報取得エラー", err);
@@ -123,6 +236,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         const gameName = d.name || "名前なしゲーム";
         const memo = d.memo || "";
         const scores = d.scores || {};
+        const storedRatingFactors = d.ratingFactors || {};
+        const computedRatingFactors = !d.ratingConfirmed
+          ? computeNextPaymentWeights({
+              members,
+              scores,
+              currentWeights: {},
+            }).factors
+          : null;
 
         let dateText = "日時未記録";
         if (d.createdAt && d.createdAt.toDate) {
@@ -232,8 +353,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         thMember.textContent = "メンバー";
         const thScore = document.createElement("th");
         thScore.textContent = "ポイント";
+        const thFactor = document.createElement("th");
+        thFactor.textContent = "レート";
         trHead.appendChild(thMember);
         trHead.appendChild(thScore);
+        trHead.appendChild(thFactor);
         thead.appendChild(trHead);
         table.appendChild(thead);
 
@@ -245,10 +369,19 @@ document.addEventListener("DOMContentLoaded", async () => {
           const tr = document.createElement("tr");
           const tdName = document.createElement("td");
           const tdScore = document.createElement("td");
+          const tdFactor = document.createElement("td");
           tdName.textContent = name;
           tdScore.textContent = String(scores[name]);
+
+          const factorValue = d.ratingConfirmed
+            ? storedRatingFactors?.[name]
+            : computedRatingFactors?.[name];
+          const factorText =
+            typeof factorValue === "number" && Number.isFinite(factorValue) ? factorValue.toFixed(2) : "—";
+          tdFactor.textContent = factorText;
           tr.appendChild(tdName);
           tr.appendChild(tdScore);
+          tr.appendChild(tdFactor);
           tbody.appendChild(tr);
         });
 
@@ -297,17 +430,60 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ===== 結果確定処理 =====
   async function confirmGameResult(docId) {
-    await dbRef
-      .collection("groups")
-      .doc(groupId)
-      .collection("games")
-      .doc(docId)
-      .set(
+    const groupRef = dbRef.collection("groups").doc(groupId);
+    const gameRef = groupRef.collection("games").doc(docId);
+
+    await dbRef.runTransaction(async (tx) => {
+      const [groupSnap, gameSnap] = await Promise.all([tx.get(groupRef), tx.get(gameRef)]);
+
+      if (!gameSnap.exists) {
+        throw new Error("game not found");
+      }
+
+      const gameData = gameSnap.data() || {};
+      if (gameData.ratingConfirmed) {
+        return;
+      }
+
+      const groupData = groupSnap.data() || {};
+      const currentWeights = groupData.paymentWeights || {};
+      const scoreMap = gameData.scores || {};
+
+      const memberList = Array.isArray(groupData.members) && groupData.members.length > 0
+        ? groupData.members
+        : Object.keys(scoreMap);
+
+      const { factors, nextWeights } = computeNextPaymentWeights({
+        members: memberList,
+        scores: scoreMap,
+        currentWeights
+      });
+
+      tx.set(
+        groupRef,
         {
-          ratingConfirmed: true,
-          ratingAppliedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          paymentWeights: nextWeights,
+          paymentWeightsVersion: PAYMENT_WEIGHTS_VERSION,
+          paymentWeightsUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          paymentWeightsSourceGameId: docId,
+          paymentWeightsSourceGameName: gameData.name || null,
         },
         { merge: true }
       );
+
+      tx.set(
+        gameRef,
+        {
+          ratingConfirmed: true,
+          ratingAppliedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          ratingMethod: "signed-sqrt-exp-normalize-cap-v1",
+          ratingFactors: factors,
+          ratingWeightsApplied: nextWeights,
+        },
+        { merge: true }
+      );
+    });
+
+    await loadPaymentWeightsFromGroup();
   }
 });

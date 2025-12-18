@@ -63,13 +63,13 @@
       <p id="shareUrlMessage" class="helper"></p>
     </div>
 
-    <h2>レーティング（最新ゲームから算出）</h2>
+    <h2>支払いレート</h2>
     <p id="ratingInfo" class="helper"></p>
     <table id="ratingsTable">
       <thead>
         <tr>
           <th>メンバー</th>
-          <th>レーティング（1=基準）</th>
+          <th>レート（平均=1）</th>
         </tr>
       </thead>
       <tbody id="ratingsBody"></tbody>
@@ -92,18 +92,19 @@
     <ul id="settlementList"></ul>
 
     <h2>メンバー別の支出・貸し借り合計</h2>
-      <table id="totalsTable">
+    <table id="totalsTable">
       <thead>
         <tr>
           <th>メンバー</th>
           <th>支出合計</th>
-          <th>負担合計</th>
+          <th>負担合計（レート前）</th>
+          <th>負担合計（レート後）</th>
           <th>差額（＋受取 / －支払い）</th>
         </tr>
       </thead>
       <tbody id="totalsBody"></tbody>
     </table>
-    </div>
+  </div>
   </main>
 
   <footer class="landing-footer">
