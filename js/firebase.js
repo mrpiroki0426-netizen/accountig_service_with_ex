@@ -26,8 +26,43 @@ const firebaseConfig = {
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
+// Ensure we always have an auth user (anonymous sign-in)
+let authReady = Promise.resolve(null);
+if (firebase.auth) {
+  let authResolved = false;
+  authReady = new Promise(resolve => {
+    const markResolved = user => {
+      if (authResolved) return;
+      authResolved = true;
+      resolve(user);
+    };
+
+    const ensureAnon = () => {
+      firebase.auth().signInAnonymously().catch(err => {
+        console.error("[firebase] anonymous sign-in failed", err);
+        // resolve anyway to avoid blocking UI forever
+        markResolved(null);
+      });
+    };
+
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        markResolved(user);
+        return;
+      }
+      ensureAnon();
+    });
+
+    // Kick off sign-in immediately in case onAuthStateChanged is delayed
+    ensureAnon();
+  });
+} else {
+  console.warn("[firebase] auth sdk not loaded; skipping anonymous sign-in");
+}
+
 // Firestoreインスタンスを共通で使えるように
 const db = firebase.firestore();
 
 // グローバルに公開
 window.db = db;
+window.authReady = authReady;

@@ -183,12 +183,17 @@ th {
 .manage-shortcuts {
   display: flex;
   gap: 10px;
-  flex-wrap: wrap;
+  flex-direction: column;
   margin: 6px 0 16px;
 }
 
 .manage-shortcuts button {
-  width: auto;
+  width: 100%;
+}
+
+.manage-shortcuts button.secondary {
+  background: #4f46e5;
+  color: #fff;
 }
 
 .manage-members {

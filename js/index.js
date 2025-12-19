@@ -276,6 +276,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     try {
+      // authReady は js/firebase.js でセットされる匿名サインイン完了待ち
+      if (window.authReady) {
+        try {
+          await window.authReady;
+        } catch (e) {
+          console.warn("[index.js] authReady wait failed, continue as is", e);
+        }
+      }
+
       const docRef = await window.db.collection("groups").add({
         name,
         members,
