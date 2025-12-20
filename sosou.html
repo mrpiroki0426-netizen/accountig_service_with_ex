@@ -31,7 +31,6 @@
       <nav class="landing-nav" aria-label="サイトナビゲーション">
         <a class="nav-link" href="index.html">トップ</a>
         <a class="nav-link" href="contact.html">お問い合わせ</a>
-        <a class="nav-cta" href="app.html">新しいグループ作成</a>
       </nav>
     </div>
   </header>
@@ -45,11 +44,12 @@
         <button id="closeMenuButton" class="side-menu-close" aria-label="メニューを閉じる">×</button>
       </div>
       <ul class="side-menu-list">
-        <li><button id="navToGroup"   class="side-menu-item">勘定を追加</button></li>
+        <li><button id="navToGroup"   class="side-menu-item">支払を追加</button></li>
         <li><button id="navToGame"    class="side-menu-item">ゲーム記録を追加</button></li>
         <li><button id="navToSosou"   class="side-menu-item">粗相の記録</button></li>
         <li><button id="navToSettle"  class="side-menu-item">精算を確認</button></li>
         <li><button id="navToManage"  class="side-menu-item">グループの管理</button></li>
+        <li><button id="navToCreate"  class="side-menu-item">新しいグループ作成</button></li>
       </ul>
     </div>
   </nav>
@@ -82,21 +82,41 @@
       <p id="sosouSuccess" class="helper"></p>
 
       <h2>履歴</h2>
-      <table id="sosouTable">
+      <table id="sosouTable" class="sosou-table">
         <thead>
           <tr>
-            <th>件名</th>
             <th>メンバー</th>
-            <th>金額</th>
+            <th>内容</th>
+            <th>ペナルティ</th>
             <th>日時</th>
-            <th>メモ</th>
-            <th></th>
           </tr>
         </thead>
         <tbody id="sosouBody"></tbody>
       </table>
     </div>
   </main>
+
+  <div id="rouletteModal" class="modal" aria-hidden="true">
+    <div class="modal-overlay" id="rouletteOverlay"></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-label="ペナルティルーレット">
+      <div class="modal-header">
+        <div class="modal-title">ペナルティルーレット</div>
+        <button type="button" id="rouletteCloseBtn" class="modal-close" aria-label="閉じる">×</button>
+      </div>
+      <p class="helper" id="rouletteHelper">ボタンを回すと、レート低下または罰金が決まります。</p>
+      <div class="roulette-visual" aria-hidden="true">
+        <div class="roulette-pointer"></div>
+        <div class="roulette-wheel" id="rouletteWheel"></div>
+      </div>
+      <div class="form-group">
+        <button type="button" id="rouletteSpinBtn">ルーレットを回す</button>
+        <p id="rouletteResult" class="helper"></p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" id="rouletteCancelBtn" class="secondary">閉じる</button>
+      </div>
+    </div>
+  </div>
 
   <footer class="landing-footer">
     <a href="about.html">サービス説明</a> |

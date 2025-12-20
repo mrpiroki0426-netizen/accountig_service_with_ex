@@ -95,19 +95,44 @@ button.secondary:hover {
 
 /* ===== テーブル ===== */
 table {
-  width: 100%;
   border-collapse: collapse;
-  margin-top: 8px;
+  border-spacing: 0;
+  width: 100%;
 }
 
-th, td {
+table tr {
   border-bottom: 1px solid #e5e7eb;
-  padding: 8px;
-  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
-th {
-  background: #f3f4f6;
+table tr:hover {
+  background-color: #d4f0fd;
+}
+
+table th,
+table td {
+  text-align: center;
+  padding: 12px 8px;
+}
+
+table td.icon {
+  background-size: 35px;
+  background-position: left 5px center;
+  background-repeat: no-repeat;
+  padding-left: 30px;
+}
+
+table td.icon.bird {
+  background-image: url(icon-bird.png);
+}
+
+table td.icon.whale {
+  background-image: url(icon-whale.png);
+}
+
+table td.icon.crab {
+  background-image: url(icon-crab.png);
 }
 
 /* ===== インラインレイアウト ===== */
@@ -171,6 +196,7 @@ th {
 .modal-title {
   font-weight: 900;
   font-size: 16px;
+  color: #111827;
 }
 
 .modal-close {
@@ -187,6 +213,74 @@ th {
   justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.roulette-visual {
+  display: grid;
+  place-items: center;
+  margin: 12px 0;
+  position: relative;
+}
+
+.roulette-wheel {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  background: conic-gradient(
+    #7c3aed 0deg 60deg,
+    #5b21b6 60deg 120deg,
+    #c084fc 120deg 180deg,
+    #8b5cf6 180deg 240deg,
+    #4c1d95 240deg 300deg,
+    #a855f7 300deg 360deg
+  );
+  position: relative;
+  filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.35));
+  transition: transform 2.1s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+.roulette-label {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(var(--angle)) translateY(-40px) rotate(90deg);
+  transform-origin: center;
+  color: #000;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-shadow: none;
+  pointer-events: none;
+  white-space: nowrap;
+  max-width: 64px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.roulette-pointer {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%) rotate(180deg);
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 16px solid #000;
+  z-index: 2;
+  pointer-events: none;
+}
+
+@media (max-width: 520px) {
+  table th,
+  table td {
+    padding: 10px 6px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+  .sosou-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 /* ===== Group Manage ===== */

@@ -1,8 +1,7 @@
-// js/settlement.js
+// js/settlement.js (UTF-8 clean)
 
 const RECENT_GROUPS_KEY = "yamican.recentGroups.v1";
 const MAX_RECENT_GROUPS = 8;
-
 const PAYMENT_WEIGHT_MIN = 0.5;
 const PAYMENT_WEIGHT_MAX = 2.0;
 
@@ -13,38 +12,33 @@ function clamp(value, min, max) {
 function applyRateBadge(el, rateValue) {
   if (!el) return;
   const rate = typeof rateValue === "number" && Number.isFinite(rateValue) ? rateValue : 1;
-
   const diff = rate - 1;
   const intensity = clamp(Math.abs(diff) / 0.8, 0, 1);
   const alpha = 0.12 + 0.42 * intensity;
-
   if (diff >= 0) {
     el.style.backgroundColor = `rgba(34, 197, 94, ${alpha})`;
-    el.style.borderColor = `rgba(34, 197, 94, ${0.18 + 0.35 * intensity})`;
+    el.style.border = `1px solid rgba(34, 197, 94, ${0.18 + 0.35 * intensity})`;
     el.style.color = intensity >= 0.55 ? "#052e16" : "#14532d";
   } else {
     el.style.backgroundColor = `rgba(239, 68, 68, ${alpha})`;
-    el.style.borderColor = `rgba(239, 68, 68, ${0.18 + 0.35 * intensity})`;
+    el.style.border = `1px solid rgba(239, 68, 68, ${0.18 + 0.35 * intensity})`;
     el.style.color = intensity >= 0.55 ? "#7f1d1d" : "#991b1b";
   }
-
   el.classList.add("rate-badge");
 }
 
 function normalizeMeanOne(map, members) {
-  // NOTE: 以前は平均=1に正規化していたが、要望により廃止（互換のため関数は残す）
+  // 互換のためそのまま返す（現状レートはそのまま使用）
   return map;
 }
 
 function loadRecentGroups() {
   if (!window.localStorage) return [];
-
   try {
     const raw = window.localStorage.getItem(RECENT_GROUPS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-
     return parsed
       .filter(item => item && typeof item.gid === "string" && item.gid.trim().length > 0)
       .map(item => ({
@@ -67,13 +61,11 @@ function saveRecentGroups(groups) {
 function upsertRecentGroup({ gid, name }) {
   const now = Date.now();
   const normalizedName = (name || "").trim() || "グループ";
-
   const current = loadRecentGroups();
-  const next = [
-    { gid, name: normalizedName, lastUsedAt: now },
-    ...current.filter(item => item.gid !== gid)
-  ].slice(0, MAX_RECENT_GROUPS);
-
+  const next = [{ gid, name: normalizedName, lastUsedAt: now }, ...current.filter(i => i.gid !== gid)].slice(
+    0,
+    MAX_RECENT_GROUPS
+  );
   saveRecentGroups(next);
 }
 
@@ -82,12 +74,9 @@ function getGroupIdFromQuery() {
   return params.get("gid");
 }
 
-// 割り勘計算ロジック（支払いレートで負担を調整）
-// レートが高いほど負担が小さくなるよう、配分は「1/レート」で重み付けする
 function calculateSettlement(members, expenses, rates = {}) {
   const paid = {};
   const shouldPay = {};
-
   members.forEach((m) => {
     paid[m] = 0;
     shouldPay[m] = 0;
@@ -104,52 +93,56 @@ function calculateSettlement(members, expenses, rates = {}) {
     const totalWeight = weights.reduce((a, b) => a + b, 0) || targets.length;
 
     paid[paidBy] = (paid[paidBy] || 0) + amount;
-    targets.forEach((t) => {
+    targets.forEach((t, idx) => {
       const r = rates[t];
       const rate = typeof r === "number" && Number.isFinite(r) && r > 0 ? r : 1;
-      const w = 1 / rate;
+      const w = weights[idx];
       const share = (amount * w) / totalWeight;
       shouldPay[t] = (shouldPay[t] || 0) + share;
     });
   });
 
-  const balances = members.map((m) => ({
-    name: m,
-    balance: paid[m] - shouldPay[m],
-  }));
-
+  const balances = members.map((m) => ({ name: m, balance: paid[m] - shouldPay[m] }));
   let plus = balances.filter((b) => b.balance > 1);
   let minus = balances.filter((b) => b.balance < -1);
   const result = [];
 
-  while (plus.length > 0 && minus.length > 0) {
+  while (plus.length && minus.length) {
     plus.sort((a, b) => b.balance - a.balance);
     minus.sort((a, b) => a.balance - b.balance);
-
     const p = plus[0];
     const m = minus[0];
-
     const amount = Math.min(p.balance, -m.balance);
     const rounded = Math.round(amount);
-
-    if (rounded > 0) {
-      result.push({ from: m.name, to: p.name, amount: rounded });
-    }
-
+    if (rounded > 0) result.push({ from: m.name, to: p.name, amount: rounded });
     p.balance -= amount;
     m.balance += amount;
-
     if (p.balance <= 1) plus.shift();
     if (m.balance >= -1) minus.shift();
   }
-
   return result;
+}
+
+function applyPenaltyRates(baseRates, penalties) {
+  const merged = { ...baseRates };
+  penalties.forEach((p) => {
+    if (p.type === "rate" && p.member) {
+      const mult = typeof p.rateMultiplier === "number" && Number.isFinite(p.rateMultiplier) ? p.rateMultiplier : 1;
+      const current = typeof merged[p.member] === "number" && Number.isFinite(merged[p.member]) ? merged[p.member] : 1;
+      merged[p.member] = current * mult;
+    }
+  });
+  return merged;
+}
+
+function formatYen(n) {
+  return `${Math.round(n || 0).toLocaleString()}円`;
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
   const groupId = getGroupIdFromQuery();
   if (!groupId) {
-    alert("グループIDが指定されていません。（URL に ?gid= が付いているか確認してください）");
+    alert("グループIDが指定されていません。URL に ?gid= を付けてください。");
     return;
   }
 
@@ -163,6 +156,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const copyShareUrlBtn = document.getElementById("copyShareUrlBtn");
   const shareUrlMessage = document.getElementById("shareUrlMessage");
 
+  // side menu
   const menuButton = document.getElementById("menuButton");
   const sideMenu = document.getElementById("sideMenu");
   const sideMenuOverlay = document.getElementById("sideMenuOverlay");
@@ -179,28 +173,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   function closeMenu() {
     sideMenu?.classList.remove("open");
   }
-
   menuButton?.addEventListener("click", openMenu);
   closeMenuButton?.addEventListener("click", closeMenu);
   sideMenuOverlay?.addEventListener("click", closeMenu);
 
-  navToGroup?.addEventListener("click", () => {
-    window.location.href = `group.html?gid=${groupId}`;
-  });
-  navToGame?.addEventListener("click", () => {
-    window.location.href = `game.html?gid=${groupId}`;
-  });
-  navToSosou?.addEventListener("click", () => {
-    window.location.href = `sosou.html?gid=${groupId}`;
-  });
+  navToGroup?.addEventListener("click", () => (window.location.href = `group.html?gid=${groupId}`));
+  navToGame?.addEventListener("click", () => (window.location.href = `game.html?gid=${groupId}`));
+  navToSosou?.addEventListener("click", () => (window.location.href = `sosou.html?gid=${groupId}`));
   navToSettle?.addEventListener("click", closeMenu);
-  navToManage?.addEventListener("click", () => {
-    window.location.href = `manage.html?gid=${groupId}`;
-  });
+  navToManage?.addEventListener("click", () => (window.location.href = `manage.html?gid=${groupId}`));
 
-  if (shareUrlInput) {
-    shareUrlInput.value = window.location.href;
-  }
+  if (shareUrlInput) shareUrlInput.value = window.location.href;
   copyShareUrlBtn?.addEventListener("click", async () => {
     if (!shareUrlInput) return;
     shareUrlMessage && (shareUrlMessage.textContent = "");
@@ -220,7 +203,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     }
     try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
+      if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(url);
       } else {
         shareUrlInput.select();
@@ -229,8 +212,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       shareUrlMessage && (shareUrlMessage.textContent = "共有URLをコピーしました。");
     } catch (err) {
       console.error("share copy error", err);
-      shareUrlMessage &&
-        (shareUrlMessage.textContent = "コピーに失敗しました。手動でコピーしてください。");
+      shareUrlMessage && (shareUrlMessage.textContent = "コピーに失敗しました。手動でコピーしてください。");
     }
   });
 
@@ -240,7 +222,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       const v = typeof paymentWeights?.[m] === "number" && Number.isFinite(paymentWeights[m]) ? paymentWeights[m] : 1;
       capped[m] = clamp(v, PAYMENT_WEIGHT_MIN, PAYMENT_WEIGHT_MAX);
     });
-
     if (ratingsBody) {
       ratingsBody.innerHTML = "";
       members.forEach((m) => {
@@ -257,11 +238,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         ratingsBody.appendChild(tr);
       });
     }
-
     if (ratingInfo) {
       ratingInfo.textContent = `${sourceLabel}（レートが高いほど負担が小さくなります）`;
     }
-
     return capped;
   }
 
@@ -271,29 +250,30 @@ document.addEventListener("DOMContentLoaded", async () => {
       groupInfoEl.textContent = "グループが見つかりませんでした。";
       return;
     }
-    const data = doc.data();
+    const data = doc.data() || {};
     const members = data.members || [];
     const groupName = data.name || "無題のイベント";
-    groupInfoEl.textContent = `グループ：${groupName}（メンバー：${members.join("、")}）`;
+    groupInfoEl.textContent = `グループ: ${groupName}（メンバー: ${members.join("、")}）`;
     upsertRecentGroup({ gid: groupId, name: groupName });
+
     const paymentWeights = data.paymentWeights || {};
     const sourceName = data.paymentWeightsSourceGameName || "";
     const sourceLabel = sourceName
       ? `最後に反映したゲーム: ${sourceName}`
       : "まだ確定済みゲームがありません";
-    const rates = renderPaymentWeights({ paymentWeights, sourceLabel, members });
+    const baseRates = renderPaymentWeights({ paymentWeights, sourceLabel, members });
 
     window.db
       .collection("groups")
       .doc(groupId)
       .collection("expenses")
       .orderBy("createdAt", "asc")
-      .onSnapshot((snapshot) => {
+      .onSnapshot(async (snapshot) => {
         const expenses = [];
         expensesBody.innerHTML = "";
 
         snapshot.forEach((d) => {
-          const exp = d.data();
+          const exp = d.data() || {};
           const record = {
             title: exp.title || "",
             amount: exp.amount || 0,
@@ -309,7 +289,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           const tdTargets = document.createElement("td");
 
           tdTitle.textContent = record.title;
-          tdAmount.textContent = `${record.amount.toLocaleString()}円`;
+          tdAmount.textContent = formatYen(record.amount);
           tdPaidBy.textContent = record.paidBy;
           tdTargets.textContent = record.targets.join("、");
 
@@ -320,7 +300,42 @@ document.addEventListener("DOMContentLoaded", async () => {
           expensesBody.appendChild(tr);
         });
 
-        // メンバー別の合計を描画（レートが高いほど負担が小さい）
+        // 粗相ペナルティ取得
+        const penaltyRates = [];
+        const penaltyExpenses = [];
+        try {
+          const sosouSnap = await window.db.collection("groups").doc(groupId).collection("sosou").get();
+          sosouSnap.forEach((doc) => {
+            const p = doc.data() || {};
+            const member = p.member || "";
+            if (p.penaltyType === "fine") {
+              const amt = typeof p.amount === "number" && Number.isFinite(p.amount) ? p.amount : null;
+              if (amt && member) {
+                penaltyExpenses.push({
+                  title: p.title ? `ペナルティ: ${p.title}` : "ペナルティ",
+                  amount: amt,
+                  paidBy: "",
+                  targets: [member],
+                });
+              }
+            } else if (p.penaltyType === "rate") {
+              const mult =
+                typeof p.rateMultiplier === "number" && Number.isFinite(p.rateMultiplier)
+                  ? p.rateMultiplier
+                  : 1 - (p.penaltyValue || 0);
+              if (member && mult > 0) {
+                penaltyRates.push({ member, rateMultiplier: mult, type: "rate" });
+              }
+            }
+          });
+        } catch (err) {
+          console.error("[settlement] sosou fetch error", err);
+        }
+
+        penaltyExpenses.forEach((exp) => expenses.push(exp));
+        const effectiveRates = applyPenaltyRates(baseRates, penaltyRates);
+
+        // メンバー別集計
         if (totalsBody) {
           totalsBody.innerHTML = "";
           const paid = {};
@@ -337,7 +352,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             const shareBefore = targetCount ? exp.amount / targetCount : 0;
 
             const weightsAfter = exp.targets.map((t) => {
-              const r = rates[t];
+              const r = effectiveRates[t];
               const rate = typeof r === "number" && Number.isFinite(r) && r > 0 ? r : 1;
               return 1 / rate;
             });
@@ -346,12 +361,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (exp.paidBy) {
               paid[exp.paidBy] = (paid[exp.paidBy] || 0) + (exp.amount || 0);
             }
-            exp.targets.forEach((t) => {
+            exp.targets.forEach((t, idx) => {
               shouldPayBeforeRate[t] = (shouldPayBeforeRate[t] || 0) + shareBefore;
 
-              const r = rates[t];
+              const r = effectiveRates[t];
               const rate = typeof r === "number" && Number.isFinite(r) && r > 0 ? r : 1;
-              const w = 1 / rate;
+              const w = weightsAfter[idx];
               const shareAfter = totalWeightAfter ? (exp.amount * w) / totalWeightAfter : shareBefore;
               shouldPayAfterRate[t] = (shouldPayAfterRate[t] || 0) + shareAfter;
             });
@@ -365,10 +380,10 @@ document.addEventListener("DOMContentLoaded", async () => {
             const tdBalance = document.createElement("td");
             const balance = (paid[m] || 0) - (shouldPayAfterRate[m] || 0);
             tdName.textContent = m;
-            tdPaid.textContent = `${Math.round(paid[m] || 0).toLocaleString()}円`;
-            tdShouldBefore.textContent = `${Math.round(shouldPayBeforeRate[m] || 0).toLocaleString()}円`;
-            tdShouldAfter.textContent = `${Math.round(shouldPayAfterRate[m] || 0).toLocaleString()}円`;
-            tdBalance.textContent = `${balance >= 0 ? "+" : ""}${Math.round(balance).toLocaleString()}円`;
+            tdPaid.textContent = formatYen(paid[m] || 0);
+            tdShouldBefore.textContent = formatYen(shouldPayBeforeRate[m] || 0);
+            tdShouldAfter.textContent = formatYen(shouldPayAfterRate[m] || 0);
+            tdBalance.textContent = `${balance >= 0 ? "+" : ""}${formatYen(balance)}`;
             tr.appendChild(tdName);
             tr.appendChild(tdPaid);
             tr.appendChild(tdShouldBefore);
@@ -378,13 +393,14 @@ document.addEventListener("DOMContentLoaded", async () => {
           });
         }
 
+        // 精算リスト
         settlementList.innerHTML = "";
         if (expenses.length === 0) {
           const li = document.createElement("li");
           li.textContent = "まだ立て替えが登録されていません。";
           settlementList.appendChild(li);
         } else {
-          const settlement = calculateSettlement(members, expenses, rates);
+          const settlement = calculateSettlement(members, expenses, effectiveRates);
           if (settlement.length === 0) {
             const li = document.createElement("li");
             li.textContent = "すでに公平な状態です。誰も支払う必要はありません。";
@@ -392,7 +408,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           } else {
             settlement.forEach((s) => {
               const li = document.createElement("li");
-              li.textContent = `${s.from} → ${s.to} に ${s.amount.toLocaleString()}円 支払う`;
+              li.textContent = `${s.from} → ${s.to} に ${formatYen(s.amount)} 支払う`;
               settlementList.appendChild(li);
             });
           }

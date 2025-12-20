@@ -35,10 +35,6 @@
     <div class="container">
       <h1>グループを作成</h1>
 
-      <h2>最近使ったグループ</h2>
-      <p id="recentGroupsEmpty" class="helper">まだありません。グループを作成するとここに表示されます。</p>
-      <ul id="recentGroupsList" class="recent-groups-list" aria-label="最近使ったグループ一覧"></ul>
-
       <div class="form-group">
         <label for="eventName">イベント名</label>
         <input type="text" id="eventName" placeholder="例：沖縄旅行、忘年会" />
@@ -58,6 +54,9 @@
 
       <button id="createGroupBtn">グループを作成</button>
 
+      <h2>最近のグループ</h2>
+      <p id="recentGroupsEmpty" class="helper">まだありません。グループを作成するとここに表示されます。</p>
+      <ul id="recentGroupsList" class="recent-groups-list" aria-label="最近のグループ一覧"></ul>
       <p id="errorMessage" class="error"></p>
     </div>
   </main>
