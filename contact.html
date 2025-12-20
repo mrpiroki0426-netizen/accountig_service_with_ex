@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
@@ -8,7 +8,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="css/style.css" />
 
-  <!-- Firebase SDK（Firestoreに問い合わせ保存） -->
+  <!-- Firebase SDK（Firestore保存用） -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -23,8 +23,6 @@
 
       <nav class="landing-nav" aria-label="サイトナビゲーション">
         <a class="nav-link" href="index.html#howto">使い方</a>
-        <a class="nav-link" href="index.html#scenes">想定シーン</a>
-        <a class="nav-link" href="index.html#future">今後</a>
         <a class="nav-link" href="contact.html">お問い合わせ</a>
         <a class="nav-cta" href="app.html">今すぐ使う</a>
       </nav>
@@ -35,29 +33,29 @@
     <div class="container">
       <h1>お問い合わせ</h1>
 
-    <p>
-      バグ報告や改善アイデア、感想などございましたら、
-      下記フォームからお気軽にご連絡ください。
-    </p>
+      <p>
+        不具合の報告、追加してほしい機能、使い方の質問などをお寄せください。
+        返信が必要な場合は、連絡先もご記入ください。
+      </p>
 
-    <div class="form-group">
-      <label for="contactName">お名前（任意）</label>
-      <input type="text" id="contactName" placeholder="ニックネームでもOKです" />
-    </div>
+      <div class="form-group">
+        <label for="contactName">お名前（任意）</label>
+        <input type="text" id="contactName" placeholder="例：ヤミカン 太郎" />
+      </div>
 
-    <div class="form-group">
-      <label for="contactEmail">メールアドレス or X(ID)（任意）</label>
-      <input type="text" id="contactEmail" placeholder="返信が必要な場合のみご記入ください" />
-    </div>
+      <div class="form-group">
+        <label for="contactEmail">メールアドレス or X(ID)（任意）</label>
+        <input type="text" id="contactEmail" placeholder="返信が必要な場合はご記入ください" />
+      </div>
 
-    <div class="form-group">
-      <label for="contactMessage">お問い合わせ内容（必須）</label>
-      <textarea id="contactMessage" rows="5" placeholder="例）iPhone で◯◯の画面が表示されません など"></textarea>
-    </div>
+      <div class="form-group">
+        <label for="contactMessage">お問い合わせ内容</label>
+        <textarea id="contactMessage" rows="5" placeholder="例：●●の画面でエラーが出ました など"></textarea>
+      </div>
 
-    <button id="contactSubmitBtn">送信する</button>
-    <p id="contactError" class="error"></p>
-    <p id="contactSuccess" class="helper"></p>
+      <button id="contactSubmitBtn">送信する</button>
+      <p id="contactError" class="error"></p>
+      <p id="contactSuccess" class="helper"></p>
     </div>
   </main>
 

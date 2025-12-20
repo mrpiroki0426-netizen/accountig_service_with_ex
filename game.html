@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>yamican - ゲームの結果一覧</title>
+  <title>yamican - ゲーム記録一覧</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="img/yamican_favicon.png?v=2" type="image/png" sizes="512x512" />
   <link rel="apple-touch-icon" href="img/yamican_favicon.png?v=2" />
@@ -31,7 +31,7 @@
       <nav class="landing-nav" aria-label="サイトナビゲーション">
         <a class="nav-link" href="index.html">トップ</a>
         <a class="nav-link" href="contact.html">お問い合わせ</a>
-        <a class="nav-cta" href="app.html">新しいグループ</a>
+        <a class="nav-cta" href="app.html">新しいグループ作成</a>
       </nav>
     </div>
   </header>
@@ -57,27 +57,27 @@
 
   <main class="landing-main">
     <div class="container">
-      <h1>ゲームの結果一覧</h1>
+      <h1>ゲーム記録一覧</h1>
 
     <!-- グループ情報 -->
     <p id="groupInfo">グループ情報を読み込み中...</p>
 
-    <button id="addNewGameBtn">新しいゲームを追加</button>
+    <button id="addNewGameBtn">新しくゲームを記録する</button>
 
-    <h2>支払いレート</h2>
+    <h2>最新の結果</h2>
     <p id="ratingInfo" class="helper"></p>
     <table id="ratingsTable">
       <thead>
         <tr>
-          <th>メンバー</th>
-          <th>レート</th>
+          <th>名前</th>
+          <th>得点</th>
         </tr>
       </thead>
       <tbody id="ratingsBody"></tbody>
     </table>
 
-    <!-- ▼ 過去のゲーム結果一覧 ▼ -->
-    <h2>過去のゲーム結果</h2>
+    <!-- これまでのゲーム -->
+    <h2>これまでのゲーム</h2>
       <div id="gamesList" class="games-list"></div>
     </div>
   </main>

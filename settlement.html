@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>yamican - 精算状況</title>
+  <title>yamican - 精算</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="img/yamican_favicon.png?v=2" type="image/png" sizes="512x512" />
   <link rel="apple-touch-icon" href="img/yamican_favicon.png?v=2" />
@@ -31,7 +31,7 @@
       <nav class="landing-nav" aria-label="サイトナビゲーション">
         <a class="nav-link" href="index.html">トップ</a>
         <a class="nav-link" href="contact.html">お問い合わせ</a>
-        <a class="nav-cta" href="app.html">新しいグループ</a>
+        <a class="nav-cta" href="app.html">新しいグループ作成</a>
       </nav>
     </div>
   </header>
@@ -57,36 +57,36 @@
 
   <main class="landing-main">
     <div class="container">
-      <h1>精算状況</h1>
+      <h1>精算</h1>
 
     <p id="groupInfo">グループ情報を読み込み中...</p>
 
-    <h2>共有リンク</h2>
+    <h2>共有URL</h2>
     <div class="form-group">
       <input type="text" id="shareUrl" readonly style="width: 100%;" />
       <button id="copyShareUrlBtn" type="button" style="margin-top: 8px;">共有URLをコピー</button>
       <p id="shareUrlMessage" class="helper"></p>
     </div>
 
-    <h2>支払いレート</h2>
+    <h2>最新の得点</h2>
     <p id="ratingInfo" class="helper"></p>
     <table id="ratingsTable">
       <thead>
         <tr>
-          <th>メンバー</th>
-          <th>レート</th>
+          <th>名前</th>
+          <th>得点</th>
         </tr>
       </thead>
       <tbody id="ratingsBody"></tbody>
     </table>
 
-    <h2>支払い一覧</h2>
+    <h2>勘定一覧</h2>
     <table id="expensesTable">
       <thead>
         <tr>
           <th>項目</th>
           <th>金額</th>
-          <th>支払った人</th>
+          <th>立て替えた人</th>
           <th>対象</th>
         </tr>
       </thead>
@@ -96,15 +96,15 @@
     <h2>精算結果</h2>
     <ul id="settlementList"></ul>
 
-    <h2>メンバー別の支出・貸し借り合計</h2>
+    <h2>メンバーごとの合計・残高</h2>
     <table id="totalsTable">
       <thead>
         <tr>
-          <th>メンバー</th>
-          <th>支出合計</th>
-          <th>負担合計（レート前）</th>
-          <th>負担合計（レート後）</th>
-          <th>差額（＋受取 / －支払い）</th>
+          <th>名前</th>
+          <th>受け取る合計</th>
+          <th>支払う合計</th>
+          <th>残高</th>
+          <th>メモ / ステータス</th>
         </tr>
       </thead>
       <tbody id="totalsBody"></tbody>
@@ -120,5 +120,4 @@
 
   <script src="js/settlement.js"></script>
 </body>
-
 </html>

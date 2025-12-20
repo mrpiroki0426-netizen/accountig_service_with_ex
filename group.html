@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>yamican - グループ</title>
+  <title>yamican - 勘定入力</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="img/yamican_favicon.png?v=2" type="image/png" sizes="512x512" />
   <link rel="apple-touch-icon" href="img/yamican_favicon.png?v=2" />
@@ -31,7 +31,7 @@
       <nav class="landing-nav" aria-label="サイトナビゲーション">
         <a class="nav-link" href="index.html">トップ</a>
         <a class="nav-link" href="contact.html">お問い合わせ</a>
-        <a class="nav-cta" href="app.html">新しいグループ</a>
+        <a class="nav-cta" href="app.html">新しいグループ作成</a>
       </nav>
     </div>
   </header>
@@ -60,38 +60,38 @@
       <h1 id="groupName">読み込み中...</h1>
       <p id="membersList"></p>
 
-    <h2>支払いを追加</h2>
+    <h2>勘定を追加</h2>
     <div class="form-group">
-      <label for="title">項目名</label>
-      <input type="text" id="title" placeholder="例：1日目の夕食" />
+      <label for="title">項目</label>
+      <input type="text" id="title" placeholder="例：夕食代 など" />
     </div>
 
     <div class="form-group">
-      <label for="amount">金額（円）</label>
+      <label for="amount">金額</label>
       <input type="number" id="amount" />
     </div>
 
     <div class="form-group">
-      <label for="paidBy">支払った人</label>
+      <label for="paidBy">立て替えた人</label>
       <select id="paidBy"></select>
     </div>
 
     <div class="form-group">
       <label>対象メンバー</label>
       <div id="targetMembers"></div>
-      <button id="selectAllBtn" type="button">全員選択</button>
+      <button id="selectAllBtn" type="button">全員にチェック</button>
     </div>
 
-    <button id="addExpenseBtn">支払いを登録</button>
+    <button id="addExpenseBtn">勘定を追加</button>
     <p id="expenseError" class="error"></p>
 
-    <h2>支払い一覧</h2>
+    <h2>勘定一覧</h2>
     <table id="expensesTable">
       <thead>
         <tr>
           <th>項目</th>
           <th>金額</th>
-          <th>支払った人</th>
+          <th>立て替えた人</th>
           <th>対象</th>
         </tr>
       </thead>
@@ -109,7 +109,7 @@
     <a href="privacy.html">プライバシーポリシー</a>
   </footer>
 
-  <!-- JS はここで 1 回だけ読み込む -->
+  <!-- JS は一番最後に読み込む -->
   <script src="js/group.js"></script>
 </body>
 

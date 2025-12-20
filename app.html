@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -25,8 +25,6 @@
 
       <nav class="landing-nav" aria-label="サイトナビゲーション">
         <a class="nav-link" href="index.html#howto">使い方</a>
-        <a class="nav-link" href="index.html#scenes">想定シーン</a>
-        <a class="nav-link" href="index.html#future">今後</a>
         <a class="nav-link" href="contact.html">お問い合わせ</a>
         <a class="nav-cta" href="app.html">今すぐ使う</a>
       </nav>
@@ -40,29 +38,27 @@
       <h2>最近使ったグループ</h2>
       <p id="recentGroupsEmpty" class="helper">まだありません。グループを作成するとここに表示されます。</p>
       <ul id="recentGroupsList" class="recent-groups-list" aria-label="最近使ったグループ一覧"></ul>
-      <button type="button" id="clearRecentGroupsBtn" class="secondary">履歴をクリア</button>
 
       <div class="form-group">
         <label for="eventName">イベント名</label>
         <input type="text" id="eventName" placeholder="例：沖縄旅行、忘年会" />
       </div>
 
-    <div class="form-group">
-      <label for="memberName">メンバーを追加</label>
+      <div class="form-group">
+        <label for="memberName">メンバーを追加</label>
 
-      <div class="inline inline-stack">
-        <input type="text" id="memberName" placeholder="例：たけし" />
-        <button type="button" id="addMemberBtn" class="secondary">追加</button>
+        <div class="inline inline-stack">
+          <input type="text" id="memberName" placeholder="例：たけし" />
+          <button type="button" id="addMemberBtn" class="secondary">追加</button>
+        </div>
+
+        <p class="helper">追加済みメンバー</p>
+        <ul id="memberList" class="member-list"></ul>
       </div>
 
-      <p class="helper">追加済みメンバー：</p>
-      <ul id="memberList" class="member-list"></ul>
-    </div>
+      <button id="createGroupBtn">グループを作成</button>
 
-
-    <button id="createGroupBtn">グループを作成</button>
-
-    <p id="errorMessage" class="error"></p>
+      <p id="errorMessage" class="error"></p>
     </div>
   </main>
 
