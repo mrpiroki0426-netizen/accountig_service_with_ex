@@ -149,13 +149,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderRecentGroups(groups = loadRecentGroups()) {
-    if (!recentGroupsListEl || !recentGroupsEmptyEl || !clearRecentGroupsBtn) return;
+    if (!recentGroupsListEl || !recentGroupsEmptyEl) return;
 
     recentGroupsListEl.innerHTML = "";
 
     const hasAny = groups.length > 0;
     recentGroupsEmptyEl.style.display = hasAny ? "none" : "block";
-    clearRecentGroupsBtn.style.display = hasAny ? "inline-block" : "none";
+    if (clearRecentGroupsBtn) {
+      clearRecentGroupsBtn.style.display = hasAny ? "inline-block" : "none";
+    }
 
     groups.forEach(group => {
       const li = document.createElement("li");
