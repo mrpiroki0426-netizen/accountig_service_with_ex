@@ -116,6 +116,10 @@ table td {
   padding: 12px 8px;
 }
 
+.rate-details-hidden .rate-detail {
+  display: none;
+}
+
 table td.icon {
   background-size: 35px;
   background-position: left 5px center;

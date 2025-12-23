@@ -188,10 +188,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   const addNewGameBtn = document.getElementById("addNewGameBtn");
   const ratingsBody = document.getElementById("ratingsBody");
   const ratingInfo = document.getElementById("ratingInfo");
+  const ratingsTable = document.getElementById("ratingsTable");
+  const toggleRateDetailBtn = document.getElementById("toggleRateDetailBtn");
   const rateLogicLink = document.getElementById("rateLogicLink");
 
   let members = [];
   let groupName = "無題のイベント";
+  let showRateDetails = false;
 
   function renderPaymentWeights({ paymentWeights, sourceLabel, baseRates = {}, penaltyMultipliers = {} }) {
     if (ratingsBody) {
@@ -211,6 +214,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         const v = typeof paymentWeights?.[m] === "number" && Number.isFinite(paymentWeights[m]) ? paymentWeights[m] : 1;
         tdGameRate.textContent = base.toFixed(2);
         tdPenaltyRate.textContent = penalty.toFixed(2);
+        tdGameRate.classList.add("rate-detail");
+        tdPenaltyRate.classList.add("rate-detail");
         const badge = document.createElement("span");
         badge.textContent = v.toFixed(2);
         applyRateBadge(badge, v);
@@ -282,6 +287,24 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
   }
+
+  function updateRateDetailToggleUI() {
+    if (!ratingsTable || !toggleRateDetailBtn) return;
+    if (showRateDetails) {
+      ratingsTable.classList.remove("rate-details-hidden");
+      toggleRateDetailBtn.textContent = "詳細を隠す";
+    } else {
+      ratingsTable.classList.add("rate-details-hidden");
+      toggleRateDetailBtn.textContent = "詳細を表示";
+    }
+  }
+
+  toggleRateDetailBtn?.addEventListener("click", () => {
+    showRateDetails = !showRateDetails;
+    updateRateDetailToggleUI();
+  });
+
+  updateRateDetailToggleUI();
 
   // ===== グループ情報の取得 =====
   try {
