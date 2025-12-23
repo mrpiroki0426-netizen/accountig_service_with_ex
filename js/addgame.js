@@ -1,4 +1,4 @@
-// js/addgame.js
+﻿// js/addgame.js
 
 const RECENT_GROUPS_KEY = "yamican.recentGroups.v1";
 const MAX_RECENT_GROUPS = 8;
@@ -184,6 +184,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let currentGameCreatedAt = null;
   const removedMembers = new Set();
   let rounds = []; // [{ scores: {member:number} }]
+  let initializedNewGameState = false;
 
   const groupDocRef = dbRef.collection("groups").doc(groupId);
   const liveGameDocRef = groupDocRef.collection("liveGame").doc("current");
@@ -557,6 +558,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       // メンバー変更があった場合に round を補完
       renderRounds();
 
+      // 新規ゲーム作成時はポイントを必ず 0 から始める
+      if (!isEditMode && !initializedNewGameState) {
+        initializedNewGameState = true;
+        resetLiveScores();
+      }
+
       if (isEditMode) {
         subscribeGameDoc();
       }
@@ -648,3 +655,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 });
+

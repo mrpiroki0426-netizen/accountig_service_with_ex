@@ -64,14 +64,18 @@ function applyRateBadge(el, rateValue) {
   const intensity = clamp(Math.abs(diff) / 0.8, 0, 1);
   const alpha = 0.12 + 0.42 * intensity;
 
-  if (diff >= 0) {
-    el.style.backgroundColor = `rgba(34, 197, 94, ${alpha})`; // green
-    el.style.borderColor = `rgba(34, 197, 94, ${0.18 + 0.35 * intensity})`;
-    el.style.color = intensity >= 0.55 ? "#052e16" : "#14532d";
-  } else {
-    el.style.backgroundColor = `rgba(239, 68, 68, ${alpha})`; // red
+  if (Math.abs(diff) < 1e-6) {
+    el.style.backgroundColor = "rgba(234, 179, 8, 0.22)"; // yellow for neutral
+    el.style.borderColor = "rgba(202, 138, 4, 0.45)";
+    el.style.color = "#854d0e";
+  } else if (diff >= 0) {
+    el.style.backgroundColor = `rgba(239, 68, 68, ${alpha})`; // red for higher rates
     el.style.borderColor = `rgba(239, 68, 68, ${0.18 + 0.35 * intensity})`;
     el.style.color = intensity >= 0.55 ? "#7f1d1d" : "#991b1b";
+  } else {
+    el.style.backgroundColor = `rgba(34, 197, 94, ${alpha})`; // green for lower rates
+    el.style.borderColor = `rgba(34, 197, 94, ${0.18 + 0.35 * intensity})`;
+    el.style.color = intensity >= 0.55 ? "#052e16" : "#14532d";
   }
 
   el.classList.add("rate-badge");
@@ -95,7 +99,8 @@ function computeNextPaymentWeights({ members, scores, currentWeights }) {
   const rawFactors = {};
   members.forEach((m, idx) => {
     const centered = raw[idx] - mean;
-    rawFactors[m] = Math.exp(PAYMENT_WEIGHTS_ALPHA * centered);
+    // 高得点ほど支払レートが下がるように符号を反転
+    rawFactors[m] = Math.exp(-PAYMENT_WEIGHTS_ALPHA * centered);
   });
 
   const normalizedFactors = {};
@@ -175,6 +180,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const addNewGameBtn = document.getElementById("addNewGameBtn");
   const ratingsBody = document.getElementById("ratingsBody");
   const ratingInfo = document.getElementById("ratingInfo");
+  const rateLogicLink = document.getElementById("rateLogicLink");
 
   let members = [];
   let groupName = "無題のイベント";
@@ -476,6 +482,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   navToManage?.addEventListener("click", () => {
     window.location.href = `manage.html?gid=${groupId}`;
   });
+
+  // レートロジックページへのリンクに gid を引き継ぐ
+  if (rateLogicLink && groupId) {
+    const url = new URL(rateLogicLink.href, window.location.href);
+    url.searchParams.set("gid", groupId);
+    rateLogicLink.href = url.toString();
+  }
 
   // ===== 結果確定処理 =====
   async function confirmGameResult(docId) {

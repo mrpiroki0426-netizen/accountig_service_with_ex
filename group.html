@@ -44,10 +44,10 @@
         <button id="closeMenuButton" class="side-menu-close" aria-label="メニューを閉じる">×</button>
       </div>
       <ul class="side-menu-list">
-        <li><button id="navToGroup"   class="side-menu-item">支払を追加</button></li>
-        <li><button id="navToGame"    class="side-menu-item">ゲーム記録を追加</button></li>
+        <li><button id="navToGroup"   class="side-menu-item">支払の記録</button></li>
+        <li><button id="navToGame"    class="side-menu-item">ゲームの記録</button></li>
         <li><button id="navToSosou"   class="side-menu-item">粗相の記録</button></li>
-        <li><button id="navToSettle"  class="side-menu-item">精算を確認</button></li>
+        <li><button id="navToSettle"  class="side-menu-item">清算を確認</button></li>
         <li><button id="navToManage" class="side-menu-item">グループの管理</button></li>
       </ul>
 
@@ -97,8 +97,10 @@
       <tbody id="expensesBody"></tbody>
     </table>
 
-    <h2>清算結果</h2>
-      <ul id="settlementList"></ul>
+    <div style="margin-top: 24px;">
+      <button id="goToSettleBtn" type="button">清算を確認する</button>
+      <p class="helper">支払を入力したら、清算画面で最終結果を確認できます。</p>
+    </div>
     </div>
   </main>
 

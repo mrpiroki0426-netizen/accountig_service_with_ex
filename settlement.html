@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>yamican - 精算</title>
+  <title>yamican - 清算</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="icon" href="img/yamican_favicon.png?v=2" type="image/png" sizes="512x512" />
   <link rel="apple-touch-icon" href="img/yamican_favicon.png?v=2" />
@@ -44,10 +44,10 @@
         <button id="closeMenuButton" class="side-menu-close" aria-label="メニューを閉じる">×</button>
       </div>
       <ul class="side-menu-list">
-        <li><button id="navToGroup"   class="side-menu-item">支払を追加</button></li>
-        <li><button id="navToGame"    class="side-menu-item">ゲーム記録を追加</button></li>
+        <li><button id="navToGroup"   class="side-menu-item">支払の記録</button></li>
+        <li><button id="navToGame"    class="side-menu-item">ゲームの記録</button></li>
         <li><button id="navToSosou"   class="side-menu-item">粗相の記録</button></li>
-        <li><button id="navToSettle"  class="side-menu-item">精算を確認</button></li>
+        <li><button id="navToSettle"  class="side-menu-item">清算を確認</button></li>
         <li><button id="navToManage" class="side-menu-item">グループの管理</button></li>
       </ul>
 
@@ -56,58 +56,50 @@
 
   <main class="landing-main">
     <div class="container">
-      <h1>精算</h1>
+      <h1>清算</h1>
 
     <p id="groupInfo">グループ情報を読み込み中...</p>
 
-    <h2>共有URL</h2>
-    <div class="form-group">
-      <input type="text" id="shareUrl" readonly style="width: 100%;" />
-      <button id="copyShareUrlBtn" type="button" style="margin-top: 8px;">共有URLをコピー</button>
-      <p id="shareUrlMessage" class="helper"></p>
-    </div>
+    <section id="ratingSection" style="display: none;">
+      <h2>最新の支払レート</h2>
+      <p id="ratingInfo" class="helper"></p>
+      <table id="ratingsTable">
+        <thead>
+          <tr>
+            <th>名前</th>
+            <th>支払レート</th>
+          </tr>
+        </thead>
+        <tbody id="ratingsBody"></tbody>
+      </table>
+    </section>
 
-    <h2>最新の得点</h2>
-    <p id="ratingInfo" class="helper"></p>
-    <table id="ratingsTable">
-      <thead>
-        <tr>
-          <th>名前</th>
-          <th>得点</th>
-        </tr>
-      </thead>
-      <tbody id="ratingsBody"></tbody>
-    </table>
-
-    <h2>支払一覧</h2>
-    <table id="expensesTable">
-      <thead>
-        <tr>
-          <th>項目</th>
-          <th>金額</th>
-          <th>立て替えた人</th>
-          <th>対象</th>
-        </tr>
-      </thead>
-      <tbody id="expensesBody"></tbody>
-    </table>
-
-    <h2>精算結果</h2>
+    <h2>清算結果</h2>
     <ul id="settlementList"></ul>
 
-    <h2>メンバーごとの合計・残高</h2>
-    <table id="totalsTable">
-      <thead>
-        <tr>
-          <th>名前</th>
-          <th>受け取る合計</th>
-          <th>支払う合計</th>
-          <th>残高</th>
-          <th>メモ / ステータス</th>
-        </tr>
-      </thead>
-      <tbody id="totalsBody"></tbody>
-    </table>
+    <div style="margin-top: 24px;">
+      <button id="showTotalsBtn" type="button">詳細を確認</button>
+    </div>
+
+    <section id="totalsSection" style="display: none; margin-top: 16px;">
+      <h2>メンバーごとの詳細</h2>
+      <table id="totalsTable">
+        <thead>
+          <tr>
+            <th>名前</th>
+            <th>支払合計</th>
+            <th>支出合計</th>
+            <th>支払レート</th>
+            <th>レート×支出</th>
+            <th>受取/支払</th>
+          </tr>
+        </thead>
+        <tbody id="totalsBody"></tbody>
+      </table>
+      <div style="margin-top: 12px;">
+        <button id="hideTotalsBtn" type="button">詳細を閉じる</button>
+      </div>
+    </section>
   </div>
   </main>
 

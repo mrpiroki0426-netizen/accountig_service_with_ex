@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>yamican - レート反映のロジック</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="img/yamican_favicon.png?v=2" type="image/png" sizes="512x512" />
+  <link rel="apple-touch-icon" href="img/yamican_favicon.png?v=2" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="landing">
+  <header class="landing-header">
+    <div class="landing-header-inner">
+      <a class="brand" href="index.html" aria-label="yamican トップへ">
+        <img class="brand-logo" src="img/yamican_logo.png" alt="yamican" />
+      </a>
+
+      <nav class="landing-nav" aria-label="サイトナビゲーション">
+        <a class="nav-link" href="game.html">ゲーム記録一覧</a>
+        <a class="nav-link" href="settlement.html">清算</a>
+        <a class="nav-cta" href="app.html">今すぐ使う</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="landing-main">
+    <div class="container">
+      <h1>レート反映のロジック</h1>
+      <p class="helper">得点が大きいほど支払レートが下がる仕組みの概要です。</p>
+
+      <section class="card" style="padding:16px; margin-bottom:16px;">
+        <h2>計算フロー（簡略図）</h2>
+        <pre style="white-space: pre-wrap; font-family: Menlo, Consolas, monospace;">
+ラウンドごとの得点
+        ↓ 合計 / ラウンド合算
+合計得点 per メンバー
+        ↓ 符号付き平方根 (signed sqrt)
+平滑化済みスコア
+        ↓ グループ平均からの差分を計算
+中心化スコア
+        ↓ exp(-α × 差分) で倍率に変換
+倍率 (上限1.3, 下限0.7)
+        ↓ 現在の支払レートに積算
+累積レート (上限2.0, 下限0.5)
+        </pre>
+      </section>
+
+      <section class="card" style="padding:16px; margin-bottom:16px;">
+        <h2>主要パラメータ</h2>
+        <ul>
+          <li>α（PAYMENT_WEIGHTS_ALPHA）: 0.12 — 影響度</li>
+          <li>1ゲームでの倍率範囲: 0.7〜1.3</li>
+          <li>累積レート範囲: 0.5〜2.0</li>
+          <li>符号: <strong>マイナス</strong>を付け、得点が高いほど exp(-α×差分) でレートが下がる</li>
+        </ul>
+      </section>
+
+      <section class="card" style="padding:16px; margin-bottom:16px;">
+        <h2>数式メモ</h2>
+        <p class="helper">m はメンバー、s(m) は合計得点、μ は平均、w<sub>t</sub>(m) は t 回目反映後のレート。</p>
+        <pre style="white-space: pre-wrap; font-family: Menlo, Consolas, monospace;">
+score_sqrt(m) = sign(s(m)) * sqrt(|s(m)|)
+centered(m)   = score_sqrt(m) - average(score_sqrt)
+factor(m)     = clamp( exp( -α * centered(m) ), 0.7, 1.3 )
+w_{t+1}(m)    = clamp( w_t(m) * factor(m), 0.5, 2.0 )
+        </pre>
+      </section>
+
+      <p class="helper">
+        <a id="backToGame" href="game.html">ゲーム記録一覧に戻る</a>
+      </p>
+    </div>
+  </main>
+
+  <footer class="landing-footer">
+    <a href="about.html">サービス説明</a> |
+    <a href="contact.html">お問い合わせ</a> |
+    <a href="privacy.html">プライバシーポリシー</a>
+  </footer>
+
+  <script>
+    // gid を引き継いで一覧に戻れるようにする
+    (function () {
+      const params = new URLSearchParams(window.location.search);
+      const gid = params.get("gid");
+      const back = document.getElementById("backToGame");
+      if (back && gid) {
+        const url = new URL(back.getAttribute("href"), window.location.href);
+        url.searchParams.set("gid", gid);
+        back.setAttribute("href", url.toString());
+      }
+    })();
+  </script>
+</body>
+</html>

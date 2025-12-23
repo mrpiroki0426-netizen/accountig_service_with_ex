@@ -396,7 +396,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = `group.html?gid=${groupId}`;
   });
   goToAddGameBtn?.addEventListener("click", () => {
-    window.location.href = `addgame.html?gid=${groupId}`;
+    window.location.href = `game.html?gid=${groupId}`;
   });
 
   const shareUrl = buildGroupUrl(groupId);

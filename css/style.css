@@ -473,6 +473,38 @@ table td.icon.crab {
   color: #ffffff;
 }
 
+/* 闇感を出すメニュー項目（ゲームの記録／粗相の記録） */
+.side-menu-item#navToGame,
+.side-menu-item#navToSosou {
+  position: relative;
+  background: linear-gradient(135deg, #120917 0%, #07040c 60%, #04030a 100%);
+  color: #fdfcff;
+  border-left: 3px solid #7f1d1d;
+  box-shadow:
+    inset 0 0 14px rgba(255, 0, 80, 0.25),
+    0 0 10px rgba(0, 0, 0, 0.65);
+  letter-spacing: 0.3px;
+}
+
+.side-menu-item#navToGame::after,
+.side-menu-item#navToSosou::after {
+  content: "";
+  position: absolute;
+  inset: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+
+.side-menu-item#navToGame:hover,
+.side-menu-item#navToSosou:hover {
+  background: radial-gradient(circle at 20% 20%, rgba(255, 0, 90, 0.16), rgba(10, 8, 20, 0.92)),
+    linear-gradient(135deg, #1b0c1f 0%, #0c0715 65%, #05040c 100%);
+  color: #ffffff;
+  box-shadow:
+    inset 0 0 20px rgba(255, 0, 80, 0.35),
+    0 0 14px rgba(0, 0, 0, 0.75);
+}
+
 /* メニューが開いた状態 */
 .side-menu.open {
   pointer-events: auto;

@@ -44,10 +44,10 @@
         <button id="closeMenuButton" class="side-menu-close" aria-label="メニューを閉じる">×</button>
       </div>
     <ul class="side-menu-list">
-      <li><button id="navToGroup"   class="side-menu-item">勘定を追加</button></li>
-      <li><button id="navToGame"    class="side-menu-item">ゲーム記録を追加</button></li>
+      <li><button id="navToGroup"   class="side-menu-item">支払の記録</button></li>
+      <li><button id="navToGame"    class="side-menu-item">ゲームの記録</button></li>
       <li><button id="navToSosou"   class="side-menu-item">粗相の記録</button></li>
-      <li><button id="navToSettle"  class="side-menu-item">精算を確認</button></li>
+      <li><button id="navToSettle"  class="side-menu-item">清算を確認</button></li>
       <li><button id="navToManage" class="side-menu-item">グループの管理</button></li>
     </ul>
 
@@ -69,7 +69,7 @@
       <thead>
         <tr>
           <th>名前</th>
-          <th>得点</th>
+          <th>支払レート</th>
         </tr>
       </thead>
       <tbody id="ratingsBody"></tbody>
@@ -78,6 +78,10 @@
     <!-- これまでのゲーム -->
     <h2>これまでのゲーム</h2>
       <div id="gamesList" class="games-list"></div>
+
+      <p class="helper" style="margin-top: 24px;">
+        <a id="rateLogicLink" href="rate-logic.html">レート反映のロジックを見る</a>
+      </p>
     </div>
   </main>
 
