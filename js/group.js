@@ -1,4 +1,4 @@
-// js/group.js
+﻿// js/group.js
 
 const RECENT_GROUPS_KEY = "yamican.recentGroups.v1";
 const MAX_RECENT_GROUPS = 8;
@@ -137,6 +137,76 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  function toMillis(ts) {
+    if (!ts) return 0;
+    if (typeof ts.toMillis === "function") return ts.toMillis();
+    if (typeof ts.toDate === "function") return ts.toDate().getTime();
+    if (ts instanceof Date) return ts.getTime();
+    return 0;
+  }
+
+  async function renderExpensesWithPenalties(baseSnap) {
+    if (!expensesBody) return;
+    const rows = [];
+
+    baseSnap.forEach((doc) => {
+      const data = doc.data();
+      rows.push({
+        title: data.title || "",
+        amount: data.amount || 0,
+        paidBy: data.paidBy || "",
+        targets: data.targets || [],
+        createdAt: toMillis(data.createdAt),
+      });
+    });
+
+    try {
+      const sosouSnap = await window.db
+        .collection("groups")
+        .doc(groupId)
+        .collection("sosou")
+        .where("penaltyType", "==", "fine")
+        .get();
+
+      sosouSnap.forEach((doc) => {
+        const p = doc.data() || {};
+        const amount = typeof p.amount === "number" ? p.amount : null;
+        const member = p.member || "";
+        if (!amount || !member) return;
+        rows.push({
+          title: p.title ? `粗相: ${p.title}` : "粗相",
+          amount,
+          paidBy: member,
+          targets: [member],
+          createdAt: toMillis(p.createdAt),
+        });
+      });
+    } catch (err) {
+      console.warn("[group.js] sosou fine load error", err);
+    }
+
+    rows.sort((a, b) => a.createdAt - b.createdAt);
+    expensesBody.innerHTML = "";
+    rows.forEach((exp) => {
+      const tr = document.createElement("tr");
+      const tdTitle = document.createElement("td");
+      const tdAmount = document.createElement("td");
+      const tdPaidBy = document.createElement("td");
+      const tdTargets = document.createElement("td");
+
+      tdTitle.textContent = exp.title;
+      tdAmount.textContent = `${Number(exp.amount || 0).toLocaleString()}円`;
+      tdPaidBy.textContent = exp.paidBy || "";
+      tdTargets.textContent = (exp.targets || []).join("、");
+
+      tr.appendChild(tdTitle);
+      tr.appendChild(tdAmount);
+      tr.appendChild(tdPaidBy);
+      tr.appendChild(tdTargets);
+      expensesBody.appendChild(tr);
+    });
+  }
+
   // 支払一覧の購読
   window.db
     .collection("groups")
@@ -144,34 +214,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     .collection("expenses")
     .orderBy("createdAt", "asc")
     .onSnapshot((snapshot) => {
-      expensesBody.innerHTML = "";
-
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const exp = {
-          title: data.title,
-          amount: data.amount,
-          paidBy: data.paidBy,
-          targets: data.targets || [],
-        };
-
-        const tr = document.createElement("tr");
-        const tdTitle = document.createElement("td");
-        const tdAmount = document.createElement("td");
-        const tdPaidBy = document.createElement("td");
-        const tdTargets = document.createElement("td");
-
-        tdTitle.textContent = exp.title;
-        tdAmount.textContent = `${Number(exp.amount || 0).toLocaleString()}円`;
-        tdPaidBy.textContent = exp.paidBy || "";
-        tdTargets.textContent = exp.targets.join("、");
-
-        tr.appendChild(tdTitle);
-        tr.appendChild(tdAmount);
-        tr.appendChild(tdPaidBy);
-        tr.appendChild(tdTargets);
-        expensesBody.appendChild(tr);
-      });
+      renderExpensesWithPenalties(snapshot);
     });
 
   selectAllBtn?.addEventListener("click", () => {
@@ -229,3 +272,4 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 });
+
