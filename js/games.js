@@ -81,6 +81,14 @@ function applyRateBadge(el, rateValue) {
   el.classList.add("rate-badge");
 }
 
+function resolvePenaltyMultiplier(penaltyValue) {
+  if (typeof penaltyValue === "number" && Number.isFinite(penaltyValue)) {
+    if (penaltyValue > 0 && penaltyValue < 1) return 1 - penaltyValue;
+    if (penaltyValue > 0) return penaltyValue;
+  }
+  return 1;
+}
+
 function signedSqrt(value) {
   const v = Number(value);
   if (!Number.isFinite(v) || v === 0) return 0;
@@ -185,20 +193,31 @@ document.addEventListener("DOMContentLoaded", async () => {
   let members = [];
   let groupName = "無題のイベント";
 
-  function renderPaymentWeights({ paymentWeights, sourceLabel }) {
+  function renderPaymentWeights({ paymentWeights, sourceLabel, baseRates = {}, penaltyMultipliers = {} }) {
     if (ratingsBody) {
       ratingsBody.innerHTML = "";
       members.forEach((m) => {
         const tr = document.createElement("tr");
         const tdName = document.createElement("td");
+        const tdGameRate = document.createElement("td");
+        const tdPenaltyRate = document.createElement("td");
         const tdRate = document.createElement("td");
         tdName.textContent = m;
+        const base = typeof baseRates?.[m] === "number" && Number.isFinite(baseRates[m]) ? baseRates[m] : 1;
+        const penalty =
+          typeof penaltyMultipliers?.[m] === "number" && Number.isFinite(penaltyMultipliers[m])
+            ? penaltyMultipliers[m]
+            : 1;
         const v = typeof paymentWeights?.[m] === "number" && Number.isFinite(paymentWeights[m]) ? paymentWeights[m] : 1;
+        tdGameRate.textContent = base.toFixed(2);
+        tdPenaltyRate.textContent = penalty.toFixed(2);
         const badge = document.createElement("span");
         badge.textContent = v.toFixed(2);
         applyRateBadge(badge, v);
         tdRate.appendChild(badge);
         tr.appendChild(tdName);
+        tr.appendChild(tdGameRate);
+        tr.appendChild(tdPenaltyRate);
         tr.appendChild(tdRate);
         ratingsBody.appendChild(tr);
       });
@@ -215,13 +234,52 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       const groupDoc = await dbRef.collection("groups").doc(groupId).get();
       const data = groupDoc.data() || {};
-      const paymentWeights = data.paymentWeights || {};
+      const baseRates = data.paymentWeights || {};
+      const penaltyMultipliers = {};
+
+      try {
+        const sosouSnap = await dbRef.collection("groups").doc(groupId).collection("sosou").get();
+        sosouSnap.forEach((doc) => {
+          const p = doc.data() || {};
+          if (p.penaltyType === "rate" && p.member) {
+            const mult =
+              typeof p.rateMultiplier === "number" && Number.isFinite(p.rateMultiplier)
+                ? p.rateMultiplier
+                : resolvePenaltyMultiplier(p.penaltyValue);
+            if (mult > 0) {
+              const current =
+                typeof penaltyMultipliers[p.member] === "number" && Number.isFinite(penaltyMultipliers[p.member])
+                  ? penaltyMultipliers[p.member]
+                  : 1;
+              penaltyMultipliers[p.member] = current * mult;
+            }
+          }
+        });
+      } catch (err) {
+        console.warn("[games.js] penalty load error", err);
+      }
+
+      const paymentWeights = {};
+      members.forEach((m) => {
+        const base = typeof baseRates[m] === "number" && Number.isFinite(baseRates[m]) ? baseRates[m] : 1;
+        const penalty =
+          typeof penaltyMultipliers[m] === "number" && Number.isFinite(penaltyMultipliers[m])
+            ? penaltyMultipliers[m]
+            : 1;
+        paymentWeights[m] = base * penalty;
+        penaltyMultipliers[m] = penalty; // normalize fallback
+      });
       const sourceName = data.paymentWeightsSourceGameName || "";
       const sourceLabel = sourceName ? `最後に反映したゲーム: ${sourceName}` : "まだ確定済みゲームがありません";
-      renderPaymentWeights({ paymentWeights, sourceLabel });
+      renderPaymentWeights({ paymentWeights, sourceLabel, baseRates, penaltyMultipliers });
     } catch (err) {
       console.warn("[games.js] payment weights load error", err);
-      renderPaymentWeights({ paymentWeights: {}, sourceLabel: "支払いレートを取得できませんでした" });
+      renderPaymentWeights({
+        paymentWeights: {},
+        baseRates: {},
+        penaltyMultipliers: {},
+        sourceLabel: "支払いレートを取得できませんでした",
+      });
     }
   }
 
