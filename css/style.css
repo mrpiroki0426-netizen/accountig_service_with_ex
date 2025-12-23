@@ -517,6 +517,12 @@ table td.icon.crab {
     0 0 12px rgba(0, 0, 0, 0.45);
 }
 
+.side-menu-item#navToGame {
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  margin-top: 6px;
+  padding-top: 16px;
+}
+
 /* 粗相の記録と清算の確認の間にライン */
 .side-menu-item#navToSettle {
   border-top: 1px solid rgba(255, 255, 255, 0.12);
