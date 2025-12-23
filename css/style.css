@@ -495,15 +495,6 @@ table td.icon.crab {
   letter-spacing: 0.3px;
 }
 
-.side-menu-item#navToGame::after,
-.side-menu-item#navToSosou::after {
-  content: "";
-  position: absolute;
-  inset: 6px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  pointer-events: none;
-}
-
 .side-menu-item#navToGame:hover,
 .side-menu-item#navToSosou:hover {
   background: radial-gradient(circle at 20% 20%, rgba(255, 0, 90, 0.16), rgba(10, 8, 20, 0.92)),
