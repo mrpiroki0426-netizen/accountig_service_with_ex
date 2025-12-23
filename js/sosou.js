@@ -227,8 +227,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
           const tdAmount = document.createElement("td");
           if (penaltyType === "rate") {
-            const mult = typeof d.rateMultiplier === "number" ? d.rateMultiplier : (1 - (penaltyValue || 0));
-            tdAmount.textContent = `レート ×${mult.toFixed(1)}`;
+            const mult =
+              typeof d.rateMultiplier === "number" && Number.isFinite(d.rateMultiplier)
+                ? d.rateMultiplier
+                : resolvePenaltyMultiplier(penaltyValue);
+            tdAmount.textContent = `レート ×${mult.toFixed(2)}`;
           } else {
             tdAmount.textContent = amount === null ? "—" : `-${Math.round(amount)}`;
           }
@@ -249,7 +252,7 @@ document.addEventListener("DOMContentLoaded", () => {
   // ルーレット
   function openRouletteModal() {
     setText(rouletteResult, "");
-    setText(rouletteHelper, "ボタンを回すと、レート低下または罰金が決まります。");
+    setText(rouletteHelper, "ボタンを回すと、レート上昇または罰金が決まります。");
     pendingOutcome = null;
     hasSpun = false;
     if (rouletteSpinBtn) rouletteSpinBtn.disabled = false;
@@ -263,9 +266,9 @@ document.addEventListener("DOMContentLoaded", () => {
   rouletteCancelBtn?.addEventListener("click", closeRouletteModal);
 
   const roulettePool = [
-    { type: "rate", value: 0.1, label: "×0.9" },
-    { type: "rate", value: 0.2, label: "×0.8" },
-    { type: "rate", value: 0.3, label: "×0.7" },
+    { type: "rate", multiplier: 1.01, label: "×1.01" },
+    { type: "rate", multiplier: 1.05, label: "×1.05" },
+    { type: "rate", multiplier: 1.1, label: "×1.10" },
     { type: "fine", value: 100, label: "-100円" },
     { type: "fine", value: 300, label: "-300円" },
     { type: "fine", value: 500, label: "-500円" },
@@ -320,20 +323,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function saveSosouWithOutcome() {
     if (!pendingEntry || !pendingOutcome) return;
-    const isRate = pendingOutcome.type === "rate";
     const payload = {
       title: pendingEntry.title,
       member: pendingEntry.member,
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       penaltyType: pendingOutcome.type,
-      penaltyValue: pendingOutcome.value,
+      penaltyValue: pendingOutcome.type === "rate" ? pendingOutcome.multiplier : pendingOutcome.value,
     };
     if (pendingOutcome.type === "fine") {
       payload.amount = pendingOutcome.value;
       payload.memo = `罰金 -${pendingOutcome.value} 円`;
     } else {
-      payload.memo = `レート ×${(1 - pendingOutcome.value).toFixed(1)}`;
-      payload.rateMultiplier = Number((1 - pendingOutcome.value).toFixed(1));
+      const mult = Number(pendingOutcome.multiplier || 1);
+      payload.memo = `レート ×${mult.toFixed(2)}`;
+      payload.rateMultiplier = mult;
     }
 
     try {
@@ -370,6 +373,16 @@ document.addEventListener("DOMContentLoaded", () => {
     pendingEntry = { title, member };
     openRouletteModal();
   });
+  function resolvePenaltyMultiplier(penaltyValue) {
+    if (typeof penaltyValue === "number" && Number.isFinite(penaltyValue)) {
+      if (penaltyValue > 0 && penaltyValue < 1) return 1 - penaltyValue;
+      if (penaltyValue > 0) return penaltyValue;
+    }
+    return 1;
+  }
 });
+
+
+
 
 

@@ -31,6 +31,14 @@ function applyRateBadge(el, rateValue) {
   el.classList.add("rate-badge");
 }
 
+function resolvePenaltyMultiplier(penaltyValue) {
+  if (typeof penaltyValue === "number" && Number.isFinite(penaltyValue)) {
+    if (penaltyValue > 0 && penaltyValue < 1) return 1 - penaltyValue;
+    if (penaltyValue > 0) return penaltyValue;
+  }
+  return 1;
+}
+
 function normalizeMeanOne(map, members) {
   // 互換のためそのまま返す（現状レートはそのまま使用）
   return map;
@@ -292,7 +300,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               const mult =
                 typeof p.rateMultiplier === "number" && Number.isFinite(p.rateMultiplier)
                   ? p.rateMultiplier
-                  : 1 - (p.penaltyValue || 0);
+                  : resolvePenaltyMultiplier(p.penaltyValue);
               if (member && mult > 0) {
                 penaltyRates.push({ member, rateMultiplier: mult, type: "rate" });
               }
