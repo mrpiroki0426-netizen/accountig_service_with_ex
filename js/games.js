@@ -55,6 +55,14 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function toMillis(ts) {
+  if (!ts) return 0;
+  if (typeof ts.toMillis === "function") return ts.toMillis();
+  if (typeof ts.toDate === "function") return ts.toDate().getTime();
+  if (ts instanceof Date) return ts.getTime();
+  return 0;
+}
+
 function applyRateBadge(el, rateValue) {
   if (!el) return;
   const rate = typeof rateValue === "number" && Number.isFinite(rateValue) ? rateValue : 1;
@@ -150,6 +158,58 @@ function computeNextPaymentWeights({ members, scores, currentWeights }) {
   });
 
   return { factors: normalizedFactors, nextWeights };
+}
+
+async function recomputePaymentWeightsAfterDeletion({ dbRef, groupId, skipGameId, fallbackMembers }) {
+  const groupRef = dbRef.collection("groups").doc(groupId);
+  const groupSnap = await groupRef.get();
+  const groupData = groupSnap.data() || {};
+  const memberList =
+    (Array.isArray(groupData.members) && groupData.members.length > 0
+      ? groupData.members
+      : Array.isArray(fallbackMembers)
+        ? fallbackMembers
+        : []) || [];
+
+  if (memberList.length === 0) return;
+
+  const confirmedSnap = await groupRef.collection("games").where("ratingConfirmed", "==", true).get();
+  const confirmed = [];
+  confirmedSnap.forEach((doc) => {
+    if (doc.id === skipGameId) return;
+    const data = doc.data() || {};
+    confirmed.push({
+      id: doc.id,
+      data,
+      ts: toMillis(data.ratingAppliedAt) || toMillis(data.createdAt) || 0,
+    });
+  });
+
+  confirmed.sort((a, b) => a.ts - b.ts);
+
+  let currentWeights = {};
+  memberList.forEach((m) => {
+    currentWeights[m] = 1;
+  });
+
+  let lastGame = null;
+  confirmed.forEach((g) => {
+    const scores = getGameScoresForMembers({ gameData: g.data, members: memberList });
+    const { nextWeights } = computeNextPaymentWeights({ members: memberList, scores, currentWeights });
+    currentWeights = nextWeights;
+    lastGame = g;
+  });
+
+  await groupRef.set(
+    {
+      paymentWeights: currentWeights,
+      paymentWeightsVersion: PAYMENT_WEIGHTS_VERSION,
+      paymentWeightsUpdatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      paymentWeightsSourceGameId: lastGame ? lastGame.id : null,
+      paymentWeightsSourceGameName: lastGame ? lastGame.data?.name || null : null,
+    },
+    { merge: true }
+  );
 }
 
 function computeTotalsFromRounds({ members, rounds }) {
@@ -537,6 +597,15 @@ document.addEventListener("DOMContentLoaded", async () => {
               .collection("games")
               .doc(gameDoc.id)
               .delete();
+            if (isLocked) {
+              await recomputePaymentWeightsAfterDeletion({
+                dbRef,
+                groupId,
+                skipGameId: gameDoc.id,
+                fallbackMembers: members,
+              });
+              await loadPaymentWeightsFromGroup();
+            }
           } catch (err) {
             console.error("[games.js] ゲーム削除エラー", err);
             alert("削除に失敗しました。時間をおいて再度お試しください。");
