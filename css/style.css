@@ -93,6 +93,10 @@ button.secondary:hover {
   font-size: 0.9rem;
 }
 
+.group-info-hidden {
+  display: none !important;
+}
+
 /* ===== テーブル ===== */
 table {
   border-collapse: collapse;
