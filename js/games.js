@@ -101,15 +101,31 @@ function normalizeMeanOne(map) {
 }
 
 function computeNextPaymentWeights({ members, scores, currentWeights }) {
-  const raw = members.map((m) => signedSqrt(scores?.[m] ?? 0));
-  const mean = raw.length > 0 ? raw.reduce((a, b) => a + b, 0) / raw.length : 0;
+  const participantScores = members
+    .map((m) => {
+      const v = scores?.[m];
+      return Number.isFinite(v) ? signedSqrt(v) : null;
+    })
+    .filter((v) => v !== null);
+
+  const mean =
+    participantScores.length > 0
+      ? participantScores.reduce((a, b) => a + b, 0) / participantScores.length
+      : 0;
   const variance =
-    raw.length > 0 ? raw.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / raw.length : 0;
+    participantScores.length > 0
+      ? participantScores.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / participantScores.length
+      : 0;
   const std = variance > 0 ? Math.sqrt(variance) : 1; // ゼロ割防止で1にフォールバック
 
   const rawFactors = {};
   members.forEach((m, idx) => {
-    const centered = (raw[idx] - mean) / std;
+    const scoreVal = scores?.[m];
+    if (!Number.isFinite(scoreVal)) {
+      rawFactors[m] = 1; // 不参加なら影響なし
+      return;
+    }
+    const centered = (signedSqrt(scoreVal) - mean) / std;
     // 高得点ほど支払レートが下がるように符号を反転
     rawFactors[m] = Math.exp(-PAYMENT_WEIGHTS_ALPHA * centered);
   });
