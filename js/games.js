@@ -398,59 +398,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         headerRight.style.display = "flex";
         headerRight.style.alignItems = "center";
         headerRight.style.gap = "8px";
-
-        const confirmBtn = document.createElement("button");
-        confirmBtn.type = "button";
-        confirmBtn.textContent = d.ratingConfirmed ? "確定済み" : "結果確定";
-        confirmBtn.style.backgroundColor = "#2563eb";
-        confirmBtn.style.borderColor = "#2563eb";
-        confirmBtn.style.color = "#fff";
-        confirmBtn.disabled = Boolean(d.ratingConfirmed);
-        confirmBtn.addEventListener("click", async () => {
-          confirmBtn.disabled = true;
-          try {
-            await confirmGameResult(gameDoc.id);
-            confirmBtn.textContent = "確定済み";
-          } catch (err) {
-            console.error("[games.js] 結果確定エラー", err);
-            alert("結果の確定に失敗しました。時間をおいて再度お試しください。");
-            confirmBtn.disabled = false;
-          }
-        });
-
-        const deleteBtn = document.createElement("button");
-        deleteBtn.type = "button";
-        deleteBtn.textContent = "削除";
-        deleteBtn.className = "secondary";
-        deleteBtn.addEventListener("click", async () => {
-          const ok = window.confirm("このゲーム結果を削除しますか？");
-          if (!ok) return;
-          try {
-            await dbRef
-              .collection("groups")
-              .doc(groupId)
-              .collection("games")
-              .doc(gameDoc.id)
-              .delete();
-          } catch (err) {
-            console.error("[games.js] ゲーム削除エラー", err);
-            alert("削除に失敗しました。時間をおいて再度お試しください。");
-          }
-        });
-
         headerRight.appendChild(dateEl);
-        headerRight.appendChild(confirmBtn);
-        if (!isLocked) {
-          const editBtn = document.createElement("button");
-          editBtn.type = "button";
-          editBtn.textContent = "編集";
-          editBtn.className = "secondary";
-          editBtn.addEventListener("click", () => {
-            window.location.href = `addgame.html?gid=${groupId}&gameId=${gameDoc.id}`;
-          });
-          headerRight.appendChild(editBtn);
-        }
-        headerRight.appendChild(deleteBtn);
 
         header.appendChild(titleEl);
         header.appendChild(headerRight);
@@ -513,6 +461,71 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         table.appendChild(tbody);
         card.appendChild(table);
+
+        // アクション（縦並び）
+        const actionStack = document.createElement("div");
+        actionStack.style.display = "flex";
+        actionStack.style.flexDirection = "column";
+        actionStack.style.gap = "8px";
+        actionStack.style.marginTop = "10px";
+
+        if (isLocked) {
+          const confirmedLabel = document.createElement("div");
+          confirmedLabel.textContent = "確定済み";
+          confirmedLabel.style.textAlign = "left";
+          actionStack.appendChild(confirmedLabel);
+        } else {
+          const confirmBtn = document.createElement("button");
+          confirmBtn.type = "button";
+          confirmBtn.textContent = "結果確定";
+          confirmBtn.style.backgroundColor = "#2563eb";
+          confirmBtn.style.borderColor = "#2563eb";
+          confirmBtn.style.color = "#fff";
+          confirmBtn.addEventListener("click", async () => {
+            confirmBtn.disabled = true;
+            try {
+              await confirmGameResult(gameDoc.id);
+              confirmBtn.textContent = "確定済み";
+            } catch (err) {
+              console.error("[games.js] 結果確定エラー", err);
+              alert("結果の確定に失敗しました。時間をおいて再度お試しください。");
+              confirmBtn.disabled = false;
+            }
+          });
+          actionStack.appendChild(confirmBtn);
+
+          const editBtn = document.createElement("button");
+          editBtn.type = "button";
+          editBtn.textContent = "編集";
+          editBtn.className = "secondary";
+          editBtn.addEventListener("click", () => {
+            window.location.href = `addgame.html?gid=${groupId}&gameId=${gameDoc.id}`;
+          });
+          actionStack.appendChild(editBtn);
+        }
+
+        const deleteBtn = document.createElement("button");
+        deleteBtn.type = "button";
+        deleteBtn.textContent = "削除";
+        deleteBtn.className = "secondary";
+        deleteBtn.addEventListener("click", async () => {
+          const ok = window.confirm("このゲーム結果を削除しますか？");
+          if (!ok) return;
+          try {
+            await dbRef
+              .collection("groups")
+              .doc(groupId)
+              .collection("games")
+              .doc(gameDoc.id)
+              .delete();
+          } catch (err) {
+            console.error("[games.js] ゲーム削除エラー", err);
+            alert("削除に失敗しました。時間をおいて再度お試しください。");
+          }
+        });
+        actionStack.appendChild(deleteBtn);
+
+        card.appendChild(actionStack);
         gamesListEl.appendChild(card);
       });
     });

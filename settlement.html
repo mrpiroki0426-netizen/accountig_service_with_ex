@@ -76,7 +76,15 @@
     </section>
 
     <h2>清算結果</h2>
-    <ul id="settlementList"></ul>
+    <table id="settlementTable">
+      <thead>
+        <tr>
+          <th>支払う人→受け取る人</th>
+          <th>金額</th>
+        </tr>
+      </thead>
+      <tbody id="settlementBody"></tbody>
+    </table>
 
     <div style="margin-top: 24px;">
       <button id="showTotalsBtn" type="button">詳細を確認</button>

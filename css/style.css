@@ -145,6 +145,11 @@ table td.icon.crab {
   background-image: url(icon-crab.png);
 }
 
+#totalsTable th,
+#totalsTable td {
+  font-size: clamp(12px, 2vw, 14px);
+}
+
 /* ===== インラインレイアウト ===== */
 .inline {
   display: flex;
@@ -599,6 +604,12 @@ table td.icon.crab {
 
   table {
     font-size: clamp(11px, 3vw, 13px);
+  }
+
+  #totalsTable th,
+  #totalsTable td {
+    font-size: clamp(10px, 3vw, 12px);
+    padding: 8px 6px;
   }
 
   #expensesTable,
@@ -1609,6 +1620,11 @@ body.landing {
 @media (max-width: 380px) {
   table {
     font-size: clamp(10px, 3.6vw, 12px);
+  }
+
+  #totalsTable th,
+  #totalsTable td {
+    font-size: clamp(10px, 3.4vw, 11px);
   }
 
   .brand-logo {

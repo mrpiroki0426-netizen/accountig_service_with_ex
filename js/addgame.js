@@ -179,12 +179,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // データ保持
   let members = [];
-  let isLocked = false;
-  let groupMembers = [];
-  let currentGameCreatedAt = null;
-  const removedMembers = new Set();
-  let rounds = []; // [{ scores: {member:number} }]
-  let initializedNewGameState = false;
+let isLocked = false;
+let groupMembers = [];
+let currentGameCreatedAt = null;
+const removedMembers = new Set();
+let rounds = []; // [{ scores: {member:number} }]
+let initializedNewGameState = false;
+let seededFreshLiveGame = false;
 
   const groupDocRef = dbRef.collection("groups").doc(groupId);
   const liveGameDocRef = groupDocRef.collection("liveGame").doc("current");
@@ -468,11 +469,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderTotals();
   }
 
-  function resetLiveScores() {
-    rounds = [createEmptyRound(members)];
-    renderRounds();
-    schedulePushLiveState();
+function resetLiveScores() {
+  rounds = [createEmptyRound(members)];
+  renderRounds();
+  schedulePushLiveState();
+}
+
+function seedNewLiveGame() {
+  if (isEditMode || seededFreshLiveGame) return;
+  if (!members || members.length === 0) return;
+  seededFreshLiveGame = true;
+  initializedNewGameState = true;
+  rounds = [createEmptyRound(members)];
+  renderRounds();
+  try {
+    const totals = computeTotalScores();
+    const payload = {
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      rounds,
+      currentRoundIndex: 0,
+      totalScores: totals,
+      scores: totals,
+    };
+    liveGameDocRef.set(payload, { merge: false }).catch((err) => {
+      console.error("[addgame.js] seed live game error", err);
+    });
+  } catch (err) {
+    console.error("[addgame.js] seed live game error", err);
   }
+}
 
   // 進行中ゲームのリアルタイム購読（新規作成時のみ）
   function subscribeLiveGame() {
@@ -546,6 +571,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!isEditMode || members.length === 0) {
         members = groupMembers.filter((m) => !removedMembers.has(m));
         if (!isEditMode) {
+          seedNewLiveGame();
           subscribeLiveGame();
         }
       }
@@ -557,12 +583,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       // メンバー変更があった場合に round を補完
       renderRounds();
-
-      // 新規ゲーム作成時はポイントを必ず 0 から始める
-      if (!isEditMode && !initializedNewGameState) {
-        initializedNewGameState = true;
-        resetLiveScores();
-      }
 
       if (isEditMode) {
         subscribeGameDoc();

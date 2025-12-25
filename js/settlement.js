@@ -159,7 +159,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   const groupInfoEl = document.getElementById("groupInfo");
-  const settlementList = document.getElementById("settlementList");
+  const settlementBody = document.getElementById("settlementBody");
   const totalsBody = document.getElementById("totalsBody");
   const totalsSection = document.getElementById("totalsSection");
   const showTotalsBtn = document.getElementById("showTotalsBtn");
@@ -382,23 +382,36 @@ document.addEventListener("DOMContentLoaded", async () => {
             });
           }
 
-        // 清算リスト
-        settlementList.innerHTML = "";
+        // 清算リスト（テーブル表示）
+        settlementBody.innerHTML = "";
         if (expenses.length === 0) {
-          const li = document.createElement("li");
-          li.textContent = "まだ立て替えが登録されていません。";
-          settlementList.appendChild(li);
+          const tr = document.createElement("tr");
+          const td = document.createElement("td");
+          td.colSpan = 2;
+          td.textContent = "まだ立て替えが登録されていません。";
+          tr.appendChild(td);
+          settlementBody.appendChild(tr);
         } else {
           const settlement = calculateSettlement(members, expenses, effectiveRates);
           if (settlement.length === 0) {
-            const li = document.createElement("li");
-            li.textContent = "すでに公平な状態です。誰も支払う必要はありません。";
-            settlementList.appendChild(li);
+            const tr = document.createElement("tr");
+            const td = document.createElement("td");
+            td.colSpan = 2;
+            td.textContent = "すでに公平な状態です。誰も支払う必要はありません。";
+            tr.appendChild(td);
+            settlementBody.appendChild(tr);
           } else {
             settlement.forEach((s) => {
-              const li = document.createElement("li");
-              li.textContent = `${s.from} → ${s.to} に ${formatYen(s.amount)} 支払う`;
-              settlementList.appendChild(li);
+              const tr = document.createElement("tr");
+              const tdDesc = document.createElement("td");
+              const tdAmount = document.createElement("td");
+
+              tdDesc.textContent = `${s.from} → ${s.to}`;
+              tdAmount.textContent = formatYen(s.amount);
+
+              tr.appendChild(tdDesc);
+              tr.appendChild(tdAmount);
+              settlementBody.appendChild(tr);
             });
           }
         }
