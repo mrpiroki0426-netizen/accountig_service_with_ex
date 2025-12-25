@@ -458,7 +458,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           tdName.textContent = name;
           const scoreValue = scores[name];
           tdScore.textContent =
-            typeof scoreValue === "number" && Number.isFinite(scoreValue) ? String(scoreValue) : "0";
+            typeof scoreValue === "number" && Number.isFinite(scoreValue) ? String(scoreValue) : "不参加";
 
           const factorValue = d.ratingConfirmed
             ? storedRatingFactors?.[name]
