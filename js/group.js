@@ -223,7 +223,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  // 支払を追加
+  // 支払の記録
   addExpenseBtn?.addEventListener("click", async () => {
     expenseError.textContent = "";
 

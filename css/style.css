@@ -98,6 +98,7 @@ table {
   border-collapse: collapse;
   border-spacing: 0;
   width: 100%;
+  font-size: clamp(13px, 1.6vw, 16px);
 }
 
 table tr {
@@ -114,6 +115,7 @@ table th,
 table td {
   text-align: center;
   padding: 12px 8px;
+  font-size: inherit;
 }
 
 .rate-details-hidden .rate-detail {
@@ -274,12 +276,17 @@ table td.icon.crab {
 }
 
 @media (max-width: 520px) {
+  table {
+    font-size: clamp(11px, 3vw, 13px);
+  }
+
   table th,
   table td {
     padding: 10px 6px;
-    font-size: 13px;
+    font-size: inherit;
     white-space: nowrap;
   }
+
   .sosou-table {
     display: block;
     overflow-x: auto;
@@ -587,7 +594,7 @@ table td.icon.crab {
 
 
   table {
-    font-size: 13px;
+    font-size: clamp(11px, 3vw, 13px);
   }
 
   #expensesTable,
@@ -756,7 +763,7 @@ table td.icon.crab {
 .game-card-table td {
   border-bottom: 1px solid #e5e7eb;
   padding: 4px 6px;
-  font-size: 13px;
+  font-size: clamp(11px, 2.8vw, 13px);
 }
 
 /* スコア入力（±ボタンつき） */
@@ -1596,6 +1603,10 @@ body.landing {
 }
 
 @media (max-width: 380px) {
+  table {
+    font-size: clamp(10px, 3.6vw, 12px);
+  }
+
   .brand-logo {
     height: 35px;
     max-width: 220px;
