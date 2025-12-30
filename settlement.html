@@ -101,19 +101,21 @@
 
     <section id="totalsSection" style="display: none; margin-top: 16px;">
       <h2>メンバーごとの詳細</h2>
-      <table id="totalsTable">
-        <thead>
-          <tr>
-            <th>名前</th>
-            <th>支払合計</th>
-            <th>支出合計</th>
-            <th>支払レート</th>
-            <th>レート×支出</th>
-            <th>受取/支払</th>
-          </tr>
-        </thead>
-        <tbody id="totalsBody"></tbody>
-      </table>
+      <div class="table-scroll">
+        <table id="totalsTable">
+          <thead>
+            <tr>
+              <th>名前</th>
+              <th>支払合計</th>
+              <th>支出合計</th>
+              <th>支払レート</th>
+              <th>レート×支出</th>
+              <th>受取/支払</th>
+            </tr>
+          </thead>
+          <tbody id="totalsBody"></tbody>
+        </table>
+      </div>
       <div style="margin-top: 12px;">
         <button id="hideTotalsBtn" type="button">詳細を閉じる</button>
       </div>
