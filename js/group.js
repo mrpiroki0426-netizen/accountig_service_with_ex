@@ -61,6 +61,18 @@ document.addEventListener("DOMContentLoaded", async () => {
   const expenseError = document.getElementById("expenseError");
   const goToSettleBtn = document.getElementById("goToSettleBtn");
 
+  // 編集モーダル要素
+  const editExpenseModal = document.getElementById("editExpenseModal");
+  const editExpenseSubtitle = document.getElementById("editExpenseSubtitle");
+  const editTitleInput = document.getElementById("editTitle");
+  const editAmountInput = document.getElementById("editAmount");
+  const editPaidBySelect = document.getElementById("editPaidBy");
+  const editTargetsDiv = document.getElementById("editTargets");
+  const editExpenseError = document.getElementById("editExpenseError");
+  const saveExpenseBtn = document.getElementById("saveExpenseBtn");
+  const deleteExpenseBtn = document.getElementById("deleteExpenseBtn");
+  const closeEditExpenseBtn = document.getElementById("closeEditExpenseBtn");
+
   const titleInput = document.getElementById("title");
   const amountInput = document.getElementById("amount");
   const addExpenseBtn = document.getElementById("addExpenseBtn");
@@ -76,6 +88,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const navToManage = document.getElementById("navToManage");
 
   let members = [];
+  let currentEditing = { id: null, type: null };
 
   // サイドメニュー
   function openMenu() {
@@ -118,6 +131,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       option.textContent = m;
       paidBySelect.appendChild(option);
 
+      const editOption = document.createElement("option");
+      editOption.value = m;
+      editOption.textContent = m;
+      editPaidBySelect.appendChild(editOption);
+
       const label = document.createElement("label");
       label.style.display = "inline-block";
       label.style.marginRight = "8px";
@@ -130,6 +148,18 @@ document.addEventListener("DOMContentLoaded", async () => {
       label.appendChild(checkbox);
       label.appendChild(document.createTextNode(m));
       targetMembersDiv.appendChild(label);
+
+      const editLabel = document.createElement("label");
+      editLabel.style.display = "inline-block";
+      editLabel.style.marginRight = "8px";
+
+      const editCheckbox = document.createElement("input");
+      editCheckbox.type = "checkbox";
+      editCheckbox.value = m;
+
+      editLabel.appendChild(editCheckbox);
+      editLabel.appendChild(document.createTextNode(m));
+      editTargetsDiv.appendChild(editLabel);
     });
   } catch (err) {
     console.error("[group.js] グループ情報取得エラー", err);
@@ -145,6 +175,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     return 0;
   }
 
+  function openEditModal() {
+    editExpenseModal?.classList.add("open");
+    editExpenseModal?.setAttribute("aria-hidden", "false");
+  }
+
+  function closeEditModal() {
+    currentEditing = { id: null, type: null };
+    editExpenseModal?.classList.remove("open");
+    editExpenseModal?.setAttribute("aria-hidden", "true");
+    editExpenseError.textContent = "";
+  }
+
+  editExpenseModal?.querySelectorAll("[data-close-modal], .modal-overlay").forEach((el) => {
+    el.addEventListener("click", closeEditModal);
+  });
+  closeEditExpenseBtn?.addEventListener("click", closeEditModal);
+
   async function renderExpensesWithPenalties(baseSnap) {
     if (!expensesBody) return;
     const rows = [];
@@ -152,6 +199,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     baseSnap.forEach((doc) => {
       const data = doc.data();
       rows.push({
+        id: doc.id,
+        type: "expense",
         title: data.title || "",
         amount: data.amount || 0,
         paidBy: data.paidBy || "",
@@ -174,6 +223,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         const member = p.member || "";
         if (!amount || !member) return;
         rows.push({
+          id: doc.id,
+          type: "penalty",
+          penaltyType: p.penaltyType,
           title: p.title ? `粗相: ${p.title}` : "粗相",
           amount,
           paidBy: member,
@@ -193,16 +245,38 @@ document.addEventListener("DOMContentLoaded", async () => {
       const tdAmount = document.createElement("td");
       const tdPaidBy = document.createElement("td");
       const tdTargets = document.createElement("td");
+      const tdActions = document.createElement("td");
 
       tdTitle.textContent = exp.title;
       tdAmount.textContent = `${Number(exp.amount || 0).toLocaleString()}円`;
       tdPaidBy.textContent = exp.paidBy || "";
       tdTargets.textContent = (exp.targets || []).join("、");
 
+      if ((exp.type === "expense" || exp.type === "penalty") && exp.id) {
+        const editBtn = document.createElement("button");
+        editBtn.textContent = "編集";
+        editBtn.className = "table-action-btn";
+        editBtn.addEventListener("click", () => {
+          currentEditing = { id: exp.id, type: exp.type, penaltyType: exp.penaltyType };
+          editExpenseSubtitle.textContent = `項目: ${exp.title || "無題"}`;
+          editTitleInput.value = exp.title || "";
+          editAmountInput.value = exp.amount || "";
+          editPaidBySelect.value = exp.paidBy || "";
+          // ターゲットのチェック状態を反映
+          const selectedTargets = new Set(exp.targets || []);
+          editTargetsDiv.querySelectorAll("input[type=checkbox]").forEach((cb) => {
+            cb.checked = selectedTargets.has(cb.value);
+          });
+          openEditModal();
+        });
+        tdActions.appendChild(editBtn);
+      }
+
       tr.appendChild(tdTitle);
       tr.appendChild(tdAmount);
       tr.appendChild(tdPaidBy);
       tr.appendChild(tdTargets);
+      tr.appendChild(tdActions);
       expensesBody.appendChild(tr);
     });
   }
@@ -269,6 +343,88 @@ document.addEventListener("DOMContentLoaded", async () => {
     } catch (err) {
       console.error("[group.js] 立て替え追加エラー", err);
       expenseError.textContent = "立て替えの登録に失敗しました。";
+    }
+  });
+
+  // 編集保存
+  saveExpenseBtn?.addEventListener("click", async () => {
+    if (!currentEditing.id || !currentEditing.type) return;
+    editExpenseError.textContent = "";
+
+    const title = (editTitleInput.value || "").trim();
+    const amount = Number(editAmountInput.value);
+    const paidBy = editPaidBySelect.value;
+    const targets = Array.from(editTargetsDiv.querySelectorAll("input[type=checkbox]"))
+      .filter((cb) => cb.checked)
+      .map((cb) => cb.value);
+
+    if (!title) {
+      editExpenseError.textContent = "項目名を入力してください。";
+      return;
+    }
+    if (!amount || amount <= 0) {
+      editExpenseError.textContent = "金額を正しく入力してください。";
+      return;
+    }
+    if (!paidBy) {
+      editExpenseError.textContent = "立て替えた人を選択してください。";
+      return;
+    }
+    if (targets.length === 0) {
+      editExpenseError.textContent = "対象メンバーを1人以上選択してください。";
+      return;
+    }
+
+    try {
+      if (currentEditing.type === "expense") {
+        await window.db
+          .collection("groups")
+          .doc(groupId)
+          .collection("expenses")
+          .doc(currentEditing.id)
+          .update({ title, amount, paidBy, targets });
+      } else if (currentEditing.type === "penalty") {
+        await window.db
+          .collection("groups")
+          .doc(groupId)
+          .collection("sosou")
+          .doc(currentEditing.id)
+          .update({ title: title.replace(/^粗相: /, ""), amount, member: paidBy });
+      }
+      closeEditModal();
+    } catch (err) {
+      console.error("[group.js] 支払更新エラー", err);
+      editExpenseError.textContent = "更新に失敗しました。通信状況を確認してください。";
+    }
+  });
+
+  // 編集削除
+  deleteExpenseBtn?.addEventListener("click", async () => {
+    if (!currentEditing.id || !currentEditing.type) return;
+    editExpenseError.textContent = "";
+    const title = (editTitleInput.value || "").trim() || "無題";
+    const confirmed = window.confirm(`「${title}」の支払を削除しますか？`);
+    if (!confirmed) return;
+    try {
+      if (currentEditing.type === "expense") {
+        await window.db
+          .collection("groups")
+          .doc(groupId)
+          .collection("expenses")
+          .doc(currentEditing.id)
+          .delete();
+      } else if (currentEditing.type === "penalty") {
+        await window.db
+          .collection("groups")
+          .doc(groupId)
+          .collection("sosou")
+          .doc(currentEditing.id)
+          .delete();
+      }
+      closeEditModal();
+    } catch (err) {
+      console.error("[group.js] 支払削除エラー", err);
+      editExpenseError.textContent = "削除に失敗しました。通信状況を確認してください。";
     }
   });
 });

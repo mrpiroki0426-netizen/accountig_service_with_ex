@@ -82,6 +82,12 @@ button.secondary:hover {
   background: #d1d5db;
 }
 
+.table-action-btn {
+  width: auto !important;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+
 /* ===== メッセージ ===== */
 .error {
   color: #e11d48;
@@ -211,6 +217,23 @@ table td.icon.crab {
 .modal-title {
   font-weight: 900;
   font-size: 16px;
+  color: #111827;
+}
+
+.modal .helper {
+  color: #111827;
+}
+
+.modal label {
+  color: #111827;
+}
+
+.modal input,
+.modal select {
+  color: #0f172a;
+}
+
+.modal #editTargets label {
   color: #111827;
 }
 
