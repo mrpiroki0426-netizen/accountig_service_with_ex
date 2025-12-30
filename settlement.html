@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <title>yamican - 清算</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="icon" href="img/yamican_favicon.png?v=2" type="image/png" sizes="512x512" />
-  <link rel="apple-touch-icon" href="img/yamican_favicon.png?v=2" />
+  <link rel="icon" href="img/favicon.png?v=2" type="image/png" sizes="512x512" />
+  <link rel="apple-touch-icon" href="img/favicon.png?v=2" />
   <link rel="stylesheet" href="css/style.css" />
 
   <!-- Firebase SDK -->
@@ -75,7 +75,16 @@
       </table>
     </section>
 
-    <h2>清算結果</h2>
+    <div class="settle-header">
+      <h2 style="margin: 0;">清算結果</h2>
+      <div class="toggle-row">
+        <label class="toggle">
+          <input type="checkbox" id="rateToggle" checked />
+          <span class="toggle-slider"></span>
+        </label>
+        <span id="rateToggleLabel" class="helper" aria-live="polite">レートを加味した清算</span>
+      </div>
+    </div>
     <table id="settlementTable">
       <thead>
         <tr>

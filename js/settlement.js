@@ -166,6 +166,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const hideTotalsBtn = document.getElementById("hideTotalsBtn");
   const ratingsBody = document.getElementById("ratingsBody");
   const ratingInfo = document.getElementById("ratingInfo");
+  const rateToggle = document.getElementById("rateToggle");
+  const rateToggleLabel = document.getElementById("rateToggleLabel");
 
   // side menu
   const menuButton = document.getElementById("menuButton");
@@ -208,6 +210,147 @@ document.addEventListener("DOMContentLoaded", async () => {
       showTotalsBtn.style.display = "inline-block";
     }
   });
+
+  let useRates = true;
+  const latestState = {
+    members: [],
+    baseRates: {},
+    penaltyRates: [],
+    expenses: [],
+    penaltyExpenses: [],
+  };
+
+  function updateToggleLabel() {
+    if (!rateToggleLabel) return;
+    rateToggleLabel.textContent = useRates ? "レートを加味した清算" : "レートを加味しない清算";
+  }
+
+  function buildEffectiveRates(members) {
+    if (!useRates) {
+      const ones = {};
+      members.forEach((m) => (ones[m] = 1));
+      return ones;
+    }
+    const merged = applyPenaltyRates(latestState.baseRates, latestState.penaltyRates);
+    const capped = {};
+    members.forEach((m) => {
+      const v = typeof merged?.[m] === "number" && Number.isFinite(merged[m]) ? merged[m] : 1;
+      capped[m] = clamp(v, PAYMENT_WEIGHT_MIN, PAYMENT_WEIGHT_MAX);
+    });
+    return capped;
+  }
+
+  function renderSettlementAndTotals() {
+    const members = latestState.members;
+    if (!members || members.length === 0) return;
+
+    const effectiveRates = buildEffectiveRates(members);
+    const expenses = [...latestState.expenses, ...latestState.penaltyExpenses];
+
+    // メンバー別集計
+    if (totalsBody) {
+      totalsBody.innerHTML = "";
+      const paid = {};
+      const shouldPayBeforeRate = {};
+      const shouldPayAfterRate = {};
+      const effectiveRateByMember = {};
+      members.forEach((m) => {
+        paid[m] = 0;
+        shouldPayBeforeRate[m] = 0;
+        shouldPayAfterRate[m] = 0;
+        effectiveRateByMember[m] = typeof effectiveRates[m] === "number" && Number.isFinite(effectiveRates[m])
+          ? effectiveRates[m]
+          : 1;
+      });
+      expenses.forEach((exp) => {
+        if (!exp.targets || exp.targets.length === 0) return;
+        const targetCount = exp.targets.length;
+        const shareBefore = targetCount ? exp.amount / targetCount : 0;
+
+        const weightsAfter = exp.targets.map((t) => {
+          const r = effectiveRates[t];
+          const rate = typeof r === "number" && Number.isFinite(r) && r > 0 ? r : 1;
+          return rate;
+        });
+        const totalWeightAfter = weightsAfter.reduce((a, b) => a + b, 0) || targetCount;
+
+        if (exp.paidBy) {
+          paid[exp.paidBy] = (paid[exp.paidBy] || 0) + (exp.amount || 0);
+        }
+        exp.targets.forEach((t, idx) => {
+          shouldPayBeforeRate[t] = (shouldPayBeforeRate[t] || 0) + shareBefore;
+
+          const r = effectiveRates[t];
+          const rate = typeof r === "number" && Number.isFinite(r) && r > 0 ? r : 1;
+          const w = weightsAfter[idx];
+          const shareAfter = totalWeightAfter ? (exp.amount * w) / totalWeightAfter : shareBefore;
+          shouldPayAfterRate[t] = (shouldPayAfterRate[t] || 0) + shareAfter;
+        });
+      });
+      members.forEach((m) => {
+        const tr = document.createElement("tr");
+        const tdName = document.createElement("td");
+        const tdPaid = document.createElement("td");
+        const tdShouldBefore = document.createElement("td");
+        const tdRate = document.createElement("td");
+        const tdShouldAfter = document.createElement("td");
+        const tdNet = document.createElement("td");
+        tdName.textContent = m;
+        tdPaid.textContent = formatYen(paid[m] || 0);
+        tdShouldBefore.textContent = formatYen(shouldPayBeforeRate[m] || 0);
+        const rateVal = effectiveRateByMember[m];
+        const rateBadge = document.createElement("span");
+        rateBadge.textContent = rateVal.toFixed(2);
+        applyRateBadge(rateBadge, rateVal);
+        tdRate.appendChild(rateBadge);
+        tdShouldAfter.textContent = formatYen(shouldPayAfterRate[m] || 0);
+        const net = (paid[m] || 0) - (shouldPayAfterRate[m] || 0);
+        tdNet.textContent = `${net >= 0 ? "+" : ""}${formatYen(net)}`;
+        tr.appendChild(tdName);
+        tr.appendChild(tdPaid);
+        tr.appendChild(tdShouldBefore);
+        tr.appendChild(tdRate);
+        tr.appendChild(tdShouldAfter);
+        tr.appendChild(tdNet);
+        totalsBody.appendChild(tr);
+      });
+    }
+
+    // 清算リスト
+    settlementBody.innerHTML = "";
+    if (expenses.length === 0) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 2;
+      td.textContent = "まだ立て替えが登録されていません。";
+      tr.appendChild(td);
+      settlementBody.appendChild(tr);
+    } else {
+      const settlement = calculateSettlement(members, expenses, effectiveRates);
+      if (settlement.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 2;
+        td.textContent = "すでに公平な状態です。誰も支払う必要はありません。";
+        tr.appendChild(td);
+        settlementBody.appendChild(tr);
+      } else {
+        settlement.forEach((s) => {
+          const tr = document.createElement("tr");
+          const tdDesc = document.createElement("td");
+          const tdAmount = document.createElement("td");
+
+          tdDesc.textContent = `${s.from} → ${s.to}`;
+          tdAmount.textContent = formatYen(s.amount);
+
+          tr.appendChild(tdDesc);
+          tr.appendChild(tdAmount);
+          settlementBody.appendChild(tr);
+        });
+      }
+    }
+    updateToggleLabel();
+  }
 
 
   function renderPaymentWeights({ paymentWeights, sourceLabel, members }) {
@@ -256,6 +399,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       ? `最後に反映したゲーム: ${sourceName}`
       : "まだ確定済みゲームがありません";
     const baseRates = renderPaymentWeights({ paymentWeights, sourceLabel, members });
+
+    latestState.members = members;
+    latestState.baseRates = baseRates;
 
     window.db
       .collection("groups")
@@ -310,112 +456,18 @@ document.addEventListener("DOMContentLoaded", async () => {
           console.error("[settlement] sosou fetch error", err);
         }
 
-        penaltyExpenses.forEach((exp) => expenses.push(exp));
-        const effectiveRates = applyPenaltyRates(baseRates, penaltyRates);
-
-        // メンバー別集計
-        if (totalsBody) {
-          totalsBody.innerHTML = "";
-          const paid = {};
-          const shouldPayBeforeRate = {};
-          const shouldPayAfterRate = {};
-          const effectiveRateByMember = {};
-            members.forEach((m) => {
-              paid[m] = 0;
-              shouldPayBeforeRate[m] = 0;
-              shouldPayAfterRate[m] = 0;
-              effectiveRateByMember[m] = typeof effectiveRates[m] === "number" && Number.isFinite(effectiveRates[m])
-                ? effectiveRates[m]
-                : 1;
-            });
-          expenses.forEach((exp) => {
-            if (!exp.targets || exp.targets.length === 0) return;
-            const targetCount = exp.targets.length;
-            const shareBefore = targetCount ? exp.amount / targetCount : 0;
-
-            const weightsAfter = exp.targets.map((t) => {
-              const r = effectiveRates[t];
-              const rate = typeof r === "number" && Number.isFinite(r) && r > 0 ? r : 1;
-              return rate;
-            });
-            const totalWeightAfter = weightsAfter.reduce((a, b) => a + b, 0) || targetCount;
-
-            if (exp.paidBy) {
-              paid[exp.paidBy] = (paid[exp.paidBy] || 0) + (exp.amount || 0);
-            }
-            exp.targets.forEach((t, idx) => {
-              shouldPayBeforeRate[t] = (shouldPayBeforeRate[t] || 0) + shareBefore;
-
-              const r = effectiveRates[t];
-              const rate = typeof r === "number" && Number.isFinite(r) && r > 0 ? r : 1;
-              const w = weightsAfter[idx];
-              const shareAfter = totalWeightAfter ? (exp.amount * w) / totalWeightAfter : shareBefore;
-              shouldPayAfterRate[t] = (shouldPayAfterRate[t] || 0) + shareAfter;
-            });
-          });
-            members.forEach((m) => {
-              const tr = document.createElement("tr");
-              const tdName = document.createElement("td");
-            const tdPaid = document.createElement("td");
-            const tdShouldBefore = document.createElement("td");
-            const tdRate = document.createElement("td");
-            const tdShouldAfter = document.createElement("td");
-            const tdNet = document.createElement("td");
-              tdName.textContent = m;
-              tdPaid.textContent = formatYen(paid[m] || 0);
-              tdShouldBefore.textContent = formatYen(shouldPayBeforeRate[m] || 0);
-              const rateVal = effectiveRateByMember[m];
-              const rateBadge = document.createElement("span");
-              rateBadge.textContent = rateVal.toFixed(2);
-              applyRateBadge(rateBadge, rateVal);
-              tdRate.appendChild(rateBadge);
-              tdShouldAfter.textContent = formatYen(shouldPayAfterRate[m] || 0);
-              const net = (paid[m] || 0) - (shouldPayAfterRate[m] || 0);
-              tdNet.textContent = `${net >= 0 ? "+" : ""}${formatYen(net)}`;
-              tr.appendChild(tdName);
-              tr.appendChild(tdPaid);
-              tr.appendChild(tdShouldBefore);
-              tr.appendChild(tdRate);
-              tr.appendChild(tdShouldAfter);
-              tr.appendChild(tdNet);
-              totalsBody.appendChild(tr);
-            });
-          }
-
-        // 清算リスト（テーブル表示）
-        settlementBody.innerHTML = "";
-        if (expenses.length === 0) {
-          const tr = document.createElement("tr");
-          const td = document.createElement("td");
-          td.colSpan = 2;
-          td.textContent = "まだ立て替えが登録されていません。";
-          tr.appendChild(td);
-          settlementBody.appendChild(tr);
-        } else {
-          const settlement = calculateSettlement(members, expenses, effectiveRates);
-          if (settlement.length === 0) {
-            const tr = document.createElement("tr");
-            const td = document.createElement("td");
-            td.colSpan = 2;
-            td.textContent = "すでに公平な状態です。誰も支払う必要はありません。";
-            tr.appendChild(td);
-            settlementBody.appendChild(tr);
-          } else {
-            settlement.forEach((s) => {
-              const tr = document.createElement("tr");
-              const tdDesc = document.createElement("td");
-              const tdAmount = document.createElement("td");
-
-              tdDesc.textContent = `${s.from} → ${s.to}`;
-              tdAmount.textContent = formatYen(s.amount);
-
-              tr.appendChild(tdDesc);
-              tr.appendChild(tdAmount);
-              settlementBody.appendChild(tr);
-            });
-          }
-        }
+        latestState.expenses = expenses;
+        latestState.penaltyRates = penaltyRates;
+        latestState.penaltyExpenses = penaltyExpenses;
+        renderSettlementAndTotals();
       });
+
+    rateToggle?.addEventListener("change", () => {
+      useRates = !!rateToggle.checked;
+      renderSettlementAndTotals();
+    });
+
+    updateToggleLabel();
   } catch (err) {
     console.error("[settlement.js] グループ情報取得エラー", err);
     groupInfoEl.textContent = "グループ情報の取得に失敗しました。";
