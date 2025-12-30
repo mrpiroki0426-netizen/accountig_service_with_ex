@@ -89,6 +89,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let members = [];
   let currentEditing = { id: null, type: null };
+  let lastExpensesSnapshot = null;
 
   // サイドメニュー
   function openMenu() {
@@ -288,8 +289,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     .collection("expenses")
     .orderBy("createdAt", "asc")
     .onSnapshot((snapshot) => {
+      lastExpensesSnapshot = snapshot;
       renderExpensesWithPenalties(snapshot);
     });
+
+  // 粗相(罰金)も一覧をリアルタイム更新
+  window.db
+    .collection("groups")
+    .doc(groupId)
+    .collection("sosou")
+    .where("penaltyType", "==", "fine")
+    .onSnapshot(
+      () => {
+        if (lastExpensesSnapshot) {
+          renderExpensesWithPenalties(lastExpensesSnapshot);
+        }
+      },
+      (err) => {
+        console.warn("[group.js] sosou fine snapshot error", err);
+      }
+    );
 
   selectAllBtn?.addEventListener("click", () => {
     targetMembersDiv.querySelectorAll("input[type=checkbox]").forEach((cb) => {
